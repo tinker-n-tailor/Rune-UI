@@ -6,7 +6,8 @@
 -- From main.lua (Init): the log, layout.lua's ById, the element list, the map (runemap.lua, nil when it did not load)
 -- and the widget search (finder.lua), whose counters the third line reads and sets back. Reports: the finder's table.
 -- Actors: main.lua's count of the game's reports of new actors (the bed names), read and set back here too.
-local Log, ById, Elements, RuneMap, Finder, Reports, Actors
+-- Census: census.lua, which counts what the Lua state holds after the full collection.
+local Log, ById, Elements, RuneMap, Finder, Reports, Actors, Census
 
 -- What the mod costs the game, logged every 60 s
 local Perf = { From = os.clock(), Ticks = 0, Sum = 0, Max = 0, Watch = 0, Long = 0, Scans = 0, ScanSum = 0, ScanMax = 0 }
@@ -47,13 +48,15 @@ end
 -- cleaned yet. A full collection of a big heap takes tens of ms, so this is for a measuring build only.
 local FULL_COLLECT = false
 -- The game's frame rate beside it, by what RuneMap does. The engine's frame counter
--- against the clock counts every frame, not a sample. Only while the HUD is on screen: menus and loading screens
--- are left out, and so is a step where the state changed.
-local FPS_STATES = { "no map", "map every frame", "map every 2nd", "map every 4th" }
-local Fps = { By = {} }   -- By: state -> { F = frames, T = seconds }. Frames, At, State: at the last read. Next: when the counter is read next. KSL, GPS: the engine's libraries.
+-- against the clock counts every frame, not a sample. A step where the state changed is left out, and so is a
+-- loading screen. "HUD hidden" is a screen that takes the HUD away, mainly the big map (M): a slow big map shows there.
+-- Low is the slowest half second of the state: a stutter shows there and not in the average.
+local FPS_STATES = { "no map", "map every frame", "map every 2nd", "map every 4th", "HUD hidden" }
+local Fps = { By = {} }   -- By: state -> { F = frames, T = seconds, Low }. Frames, At, State: at the last read. Next: when the counter is read next. KSL, GPS: the engine's libraries.
 local function FpsState()
     local V = ById("vitals").Instances[1]
-    if not (V and V:IsValid() and V:IsVisible()) then return nil end
+    if not (V and V:IsValid()) then return nil end
+    if not V:IsVisible() then return FPS_STATES[5] end
     if not (RuneMap and RuneMap.Visible) then return FPS_STATES[1] end
     return FPS_STATES[RuneMap.Set.Smooth and 2 or (RuneMap.Set.Fastest and 4 or 3)]
 end
@@ -61,6 +64,7 @@ local function AddFrames(state, frames, seconds)
     local b = Fps.By[state]
     if not b then b = { F = 0, T = 0 } Fps.By[state] = b end
     b.F, b.T = b.F + frames, b.T + seconds
+    if seconds >= 0.4 and (not b.Low or frames / seconds < b.Low) then b.Low = frames / seconds end
 end
 local function CountFrames(now)
     if not Fps.Sampled then
@@ -101,7 +105,7 @@ local function PerfLog(now)
     for _, s in ipairs(FPS_STATES) do
         local b = Fps.By[s]
         if b and b.T >= 1 and b.F > 0 then
-            parts[#parts + 1] = string.format("%s %.0f fps (%.1f ms) for %.0f s", s, b.F / b.T, b.T / b.F * 1000, b.T)
+            parts[#parts + 1] = string.format("%s %.0f fps (%.1f ms, low %.0f) for %.0f s", s, b.F / b.T, b.T / b.F * 1000, b.Low or b.F / b.T, b.T)
         end
     end
     Log("perf: game " .. (#parts > 0 and table.concat(parts, "; ") or "HUD not on screen"))
@@ -133,6 +137,7 @@ local function PerfLog(now)
         local before, t0 = collectgarbage("count"), os.clock()
         collectgarbage("collect")
         Log(string.format("perf: full collection: %.0f KB before, %.0f KB after, %.0f ms", before, collectgarbage("count"), (os.clock() - t0) * 1000))
+        if Census then Census.Write(Log) end
     end
     Finder.Searches = { N = 0, Sum = 0, Max = 0, Why = {} }
     Reports.Seen, Reports.Kept, Reports.Time, Reports.Max, Reports.Quick = 0, 0, 0, 0, 0
@@ -144,7 +149,7 @@ end
 
 function Perf.Init(ctx)
     Log, ById, Elements, RuneMap, Finder = ctx.Log, ctx.ById, ctx.Elements, ctx.RuneMap, ctx.Finder
-    Reports, Actors = Finder.Reports, ctx.Actors or { N = 0, Time = 0 }
+    Reports, Actors, Census = Finder.Reports, ctx.Actors or { N = 0, Time = 0 }, ctx.Census
 end
 Perf.CountFrames, Perf.Write = CountFrames, PerfLog
 return Perf

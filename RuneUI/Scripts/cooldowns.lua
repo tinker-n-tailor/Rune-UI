@@ -242,7 +242,7 @@ function M.Tick(ctx)
     end
     for i, t in ipairs(M.Tiles) do Show(t, items[i]) end
     -- the gold edge is an outline, which ignores the opacity apply.lua sets (F9 dimming, the opacity keys): it takes
-    -- that opacity by its own colour, as runemap.lua ApplyOpacity does. Here the edge follows the opacity keys at
+    -- that opacity by its own colour, as maplook.lua ApplyOpacity does. Here the edge follows the opacity keys at
     -- once, with no change of visibility after SetBrush (in game, 03-10-2026). The tool bar's edges are not drawn
     -- again after SetBrush alone (see toolbar.lua). The reason for the difference is not known.
     local op = M.W:GetRenderOpacity()
@@ -255,7 +255,7 @@ function M.Tick(ctx)
         end
     end
     -- with the game's HUD (menus, the big map); off the screen when empty, not only see-through: the gold edge is an
-    -- outline, and outlines stay at full strength inside a see-through parent (see runemap.lua)
+    -- outline, and outlines stay at full strength inside a see-through parent (see maplook.lua)
     local V = ctx.ById("vitals").Instances[1]
     local hud = V and V:IsValid() and V:IsVisible()
     local visible = hud and #items > 0 and (ctx.On() or editing)

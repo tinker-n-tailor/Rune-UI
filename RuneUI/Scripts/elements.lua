@@ -13,9 +13,12 @@
 -- Child: move only this named child of the widget's root, not the whole widget.
 local Elements = {
     { Id="vitals",   Name="Health, stamina and shield bars", Classes={"WBP_HUD_PlayerVitalsBars_C"},
-      Full=true, A={0.5,1}, Center={X=952, Y=967}, Size={X=330, Y=75}, Below=36 },   -- Below: the line and Rune XP's row
+      -- the three bars alone, without the room of Rune XP's row under them: the frame is what the player sees and lines
+      -- up on the grid (the owner's word). Measured on the game's screenshot of 11-10-2026: 341 x 70 pixels at 90%, 2560 wide.
+      Full=true, A={0.5,1}, Center={X=962.5, Y=967.5}, Size={X=284, Y=58} },
     { Id="avatar",   Name="Level badge",                     Custom="avatar",
-      Inside="vitals", A={0.5,1}, Center={X=744.5, Y=967}, Size={X=69, Y=69} },
+      -- Size: the badge as drawn, 67 pixels at 90% on the game's screenshot of 11-10-2026. Its box is 69 (avatar.lua).
+      Inside="vitals", A={0.5,1}, Center={X=744.5, Y=967}, Size={X=58, Y=58} },
     { Id="weapon",   Name="Weapon effect",                   Classes={"WBP_HUD_WeaponEnhancements_C"},
       Inside="vitals", A={0.5,1}, Center={X=1316, Y=911}, Size={X=44, Y=44} },
     -- the area effects (Scorch, Imarus' gaze) sit in the row above the bars; with the bars at the top of the
@@ -23,7 +26,8 @@ local Elements = {
     { Id="region",   Name="Area effects (Scorch, Imarus)",  Classes={"WBP_ImarusGazeRadial_C", "WBP_RegionEffectRadial_C"},
       Inside="vitals", A={0.5,1}, Center={X=952, Y=911}, Size={X=44, Y=44} },
     { Id="survival", Name="Survival rings",                  Classes={"WBP_SurvivalCore_Upkeep_C"},
-      Inside="vitals", A={0,1}, Center={X=158, Y=968}, Size={X=215, Y=95} },
+      -- the three rings alone: 194 x 68 pixels at 72% on the game's screenshot of 11-10-2026 (2560 wide)
+      Inside="vitals", A={0,1}, Center={X=160, Y=973.5}, Size={X=202, Y=71} },
     -- the drink ring, inside the food rings' widget. Follows: it stays beside the rings wherever they go (with Inside
     -- it stayed at its own default spot, far from moved rings; seen 01-10-2026). Centre: right of the rest ring, level
     -- with the rings (243 units right of the water ring).
@@ -31,11 +35,13 @@ local Elements = {
     { Id="drink",    Name="Food, water and potion buffs",  Classes={"WBP_HUD_DrinkBuffListEntry_C", "WBP_HUD_FoodBuffListEntry_C", "WBP_HUD_PotionBuffListEntry_C"},
       Follows="survival", A={0,1}, Center={X=328, Y=958}, Size={X=50, Y=50} },
     { Id="toolbar",  Name="Tool bar",                       Classes={"WBP_Inventory_QuickAccesBar_C"},
-      A={0,0}, Center={X=330, Y=110}, Size={X=545, Y=62} },
+      -- the eight slots with their durability lines: 684 x 67 pixels at 95% on the game's screenshot of 11-10-2026
+      A={0,0}, Center={X=338, Y=120}, Size={X=540, Y=53} },
     -- Redraw: the strip with the letters is in a box that the game draws once and then only on request (probe of
     -- 04-10-2026). Drawn while the compass was unseen, it stayed empty: the marks showed, the strip did not.
     { Id="compass",  Name="Compass",                        Classes={"WBP_HUD_Compass_C"},
-      Full=true, A={0.5,0}, Center={X=960, Y=86}, Size={X=600, Y=120}, Redraw="CompassRetainerBox" },
+      -- Size: the letters, the line and the marks under it, 60 pixels high at 65% on the game's screenshot of 11-10-2026
+      Full=true, A={0.5,0}, Center={X=960, Y=82.5}, Size={X=600, Y=70}, Redraw="CompassRetainerBox" },
     -- no element for the MiniMap addon's map: the big map (M) and RuneMap's own map are of the same class,
     -- so hiding that element would hide both
     { Id="runemap",  Name="Rune Map",                       Custom="map",
@@ -171,7 +177,10 @@ local Elements = {
     -- the rune and arrow count of the staff and the bow: only its box moves, the crosshair stays in the middle
     -- (the reticles' trees, read in game 27-09-2026: VerticalBox_0 holds the ammo name and the count)
     { Id="ammo",     Name="Arrow and rune count",                  Classes={"WBP_ReticleMagic_C", "WBP_ReticleRangedADS_C"},
-      Child="VerticalBox_0", NoClip=true, A={0.5,0.5}, Center={X=840, Y=551}, Size={X=262, Y=34} },   -- name, disk, count
+      -- The game's box is 150 wide at 745, 512 (its slot), and our row is wider, so the row starts at the box's left edge:
+      -- the name's room 745 to 855, the disk 861 to 891, the count up to about 925, all 30 high at the top of the box
+      -- (the game's screenshot of 11-10-2026: the disk and "160" at 842 to 922, 1378 to 1414 pixels, moved -230, 520).
+      Child="VerticalBox_0", NoClip=true, A={0.5,0.5}, Center={X=835, Y=527}, Size={X=180, Y=30} },
 }
 
 -- Starting layout: bars and buffs top left, compass 85%, food and water centred above the tool bar, saving animation bottom right.

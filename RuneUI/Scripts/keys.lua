@@ -84,6 +84,7 @@ local function Toggle(which)
     local was = (which == "edit" and Ed.Edit) or (which == "map" and Ed.Map) or (P and P.Open)
     if Ed.Edit or Ed.Map then Ed.Save = true end
     Ed.Edit, Ed.Map = which == "edit" and not was, which == "map" and not was
+    if Ed.Edit then Ed.Grid = true end   -- the grid shows whenever F9 opens
     if Camera then Camera.Open = which == "camera" and not was end
     if Skin then Skin.Open = which == "skin" and not was end
 end
@@ -158,7 +159,9 @@ function M.Bind()
     -- F7: the next layout profile, only while the editor is open (the step saves this one and loads the next)
     RegisterKeyBind(KeyCode("profile"), function() if Ed.Edit then Prof.Wanted = true end end)
 
-    RegisterKeyBind(VK.Delete, function() if Ed.Edit and not Elements[Ed.Selected].NoHide then Elements[Ed.Selected].Visible = false end end)
+    RegisterKeyBind(VK.G, function() if Ed.Edit then Ed.Grid = not Ed.Grid end end)   -- the grid of F9, off and on
+
+    RegisterKeyBind(VK.Delete,function() if Ed.Edit and not Elements[Ed.Selected].NoHide then Elements[Ed.Selected].Visible = false end end)
     RegisterKeyBind(VK.Insert, function() if Ed.Edit then Elements[Ed.Selected].Visible = true end end)
     RegisterKeyBind(VK.Backspace, function()
         local P = ListPanel()

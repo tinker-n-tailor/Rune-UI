@@ -63,8 +63,12 @@ local function TickBody()
     local buffsNew = false
     if now > NextBuffCount then   -- 4 times a second; its own clock, so not every step between scans
         NextBuffCount = now + 0.25
-        local okB, b = Buffs and pcall(Buffs.Changed)
-        buffsNew = okB and b or false
+        -- not "Buffs and pcall(...)": an "and" keeps only the first value of a call, so the answer was lost and
+        -- a new buff waited for the 2 s scan
+        if Buffs then
+            local okB, b = pcall(Buffs.Changed)
+            buffsNew = okB and b or false
+        end
     end
     -- Sooner too when the game reported a widget that a part uses: the drink's entry can come after its count
     -- changed, and the ring then waited for the 2 s scan. 4 scans a second at most, as a

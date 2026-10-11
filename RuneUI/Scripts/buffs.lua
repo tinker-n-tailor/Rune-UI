@@ -5,10 +5,10 @@
 
 local M = {}
 -- main.lua's helpers, bound once by Init (see Util in main.lua)
-local Log, ById, Uniq, G, ClearOurs, ClassName, FindClass, CachedTex, Survival, MayTry, Failed
+local Log, ById, Uniq, G, ClearOurs, ClassName, FindClass, CachedTex, Survival, MayTry, Failed, BuffTime
 function M.Init(ctx)
     Log, ById, Uniq, G, ClearOurs, ClassName, FindClass = ctx.Log, ctx.ById, ctx.Uniq, ctx.G, ctx.ClearOurs, ctx.ClassName, ctx.FindClass
-    CachedTex, Survival, MayTry, Failed = ctx.CachedTex, ctx.Survival, ctx.MayTry, ctx.Failed
+    CachedTex, Survival, MayTry, Failed, BuffTime = ctx.CachedTex, ctx.Survival, ctx.MayTry, ctx.Failed, ctx.BuffTime
 end
 
 -- The retry rule (MayTry, Failed) of each build, by the full name of the row, entry or drink: a build that fails is
@@ -101,34 +101,43 @@ end
 
 ---------------------------------------------------------------- buffs under the bars
 
--- Each buff entry is: SizeBox > Overlay > [icon, Overlay > [ProgressBarImage, TitleText]]. The buff is its icon with
--- the game's thin bar close under it, and no title: it sits under the bars and looks like one of them. The game fills
--- the bar, gives it the buff's colour, and hides it for a buff without a timer, so the mod only places it (and reads
--- its number: BuffFill). The hidden bar holds a test pink (probe 13, 02-10-2026).
--- The icon stands bare on the world, and on grass by day it was hard to read: a dark copy of it sits behind it, as
--- the letters' shadow (letters.lua).
+-- Each buff entry is: SizeBox > Overlay > [icon, Overlay > [ProgressBarImage, TitleText]]. The buff is one icon, with
+-- no bar and no title: the mod's face (bufftime.lua), which is the icon and the timer. The game's icon, bar and title
+-- are unseen. The game fills the bar, gives it the buff's colour, and hides it for a buff without a timer: the mod
+-- reads the bar's number (BuffFill) and its colour.
 local BUFF_BOX = { W = 46, H = 50 }     -- one entry of the row
 local BUFF_ICON = 42                    -- the game's icon; its picture has a wide empty edge
-local BUFF_BAR = { W = 26, H = 4 }      -- as wide as the icon's art
-local BUFF_LIFT, BUFF_BAR_UP = -4, -6   -- the icon and the bar, both moved up: a small gap between the two
+local BUFF_LIFT = -4                    -- the face, moved up
 local BuffPics = {}   -- the icon pictures already named in the log, once each
-local BUFF_SHADE, BUFF_SHADE_OFF = { R = 0, G = 0, B = 0, A = 0.85 }, 1.5
-local BuffDeco = {}   -- entry full name -> { W, Box, Icon, Bar, Shade, Pic, Over, Positive, Closed }
+local BuffDeco = {}   -- entry full name -> { W, Box, Icon, Bar, the face's parts, Name, Pic, Over, Positive, Closed }
 local NO_PAD = { Left = 0, Top = 0, Right = 0, Bottom = 0 }
 
--- The shadow takes the icon's picture. An entry is reused for another buff, so the picture is read every time. The
--- game loads it late: while the icon has none, the shadow is unseen. Pic is written last: a set that fails is tried again.
+-- The name of the buff in the entry, or nil. An entry is reused for another buff, so the name is read every look. A
+-- call on an object that wraps null crashes the game and pcall does not catch it: IsValid comes first.
+local function BuffName(d)
+    local ok, name = pcall(function()
+        local data = d.W.StatusEffectData
+        if data and data:IsValid() then return data:GetFName():ToString() end
+    end)
+    return ok and name or nil
+end
+
+-- The face takes the buff's picture: the mod's own for a name that the mod knows, the game's for any other. An
+-- entry is reused for another buff, so the name and the picture are read every time. The game loads its picture
+-- late: while there is none, the face is unseen. Pic is written last: a set that fails is tried again.
 local function ShadeBuff(d)
-    local tex = d.Icon.Brush.ResourceObject
+    d.Name = BuffName(d)
+    local tex, ours = BuffTime.Picture(d.Name, d.W, CachedTex, Log), true
+    if not tex then tex, ours = d.Icon.Brush.ResourceObject, false end
     if not (tex and tex:IsValid()) then
-        if d.Pic then d.Pic = nil d.Shade:SetRenderOpacity(0.0) end
+        if d.Pic then d.Pic = nil d.Face:SetRenderOpacity(0.0) end
         return
     end
-    local pic = tex:GetFName():ToString()
+    local pic = ours and d.Name or tex:GetFName():ToString()
     if pic == d.Pic then return end
-    d.Shade:SetRenderOpacity(0.0)   -- a set that fails must not leave the last buff's shadow under this icon
-    d.Shade:SetBrushFromTexture(tex, false)
-    d.Shade:SetRenderOpacity(d.Closed and 0.0 or 1.0)   -- PlaceBuff decides while the entry is closed
+    d.Face:SetRenderOpacity(0.0)   -- a set that fails must not leave the last buff's picture in this entry
+    BuffTime.SetPicture(d, tex, ours)
+    d.Face:SetRenderOpacity(d.Closed and 0.0 or 1.0)   -- PlaceBuff decides while the entry is closed
     d.Pic = pic
     if not BuffPics[pic] then BuffPics[pic] = true Log("buff icon: " .. pic) end
 end
@@ -169,35 +178,22 @@ local OverPics = {}
 local Present, Next = {}, {}   -- the names of the buffs that are on: at the last full look, and in this one
 local ClosedLogged = false
 
--- The name of the buff in the entry, or nil. An entry is reused for another buff, so the name is read every look. A
--- call on an object that wraps null crashes the game and pcall does not catch it: IsValid comes first.
-local function BuffName(d)
-    local ok, name = pcall(function()
-        local data = d.W.StatusEffectData
-        if data and data:IsValid() then return data:GetFName():ToString() end
-    end)
-    return ok and name or nil
-end
-
 -- Whether every widget of the entry is still there. The game can free an entry between two looks, and a call on a
 -- freed object crashes the game: whatever writes outside the look checks this first.
 local function Alive(d)
-    return d.W:IsValid() and (not d.Icon or (d.Box:IsValid() and d.Icon:IsValid() and d.Bar:IsValid() and d.Shade:IsValid()))
+    return d.W:IsValid() and (not d.Icon or (d.Box:IsValid() and d.Icon:IsValid() and d.Bar:IsValid() and BuffTime.Alive(d)))
 end
 
 -- The one place that decides how an entry shows, from what the look found (Over, Positive) and the level that
 -- immersive.lua gave (Share, 1 when none). An entry that is over, or a good buff that is gone, is closed: 1 unit
--- wide, and its icon, bar and shadow unseen as well, as the game can show the entry again by its own animation
--- and the icon would stand in the 1 unit as a thin line (clipping is off). What is decided is written once; the
+-- wide, and its face unseen as well, as the game can show the entry again by its own animation
+-- and the face would stand in the 1 unit as a thin line (clipping is off). What is decided is written once; the
 -- flag comes after the call, so a call that fails is tried again. A closed entry is also read every look.
 local function PlaceBuff(d)
     local closed = d.Over or (d.Positive and (d.Share or 1) <= 0)
     if closed ~= (d.Closed or false) then
         d.Box:SetWidthOverride(closed and 1 or BUFF_BOX.W)
-        local part = closed and 0.0 or 1.0
-        d.Icon:SetRenderOpacity(part)
-        d.Bar:SetRenderOpacity(part)
-        d.Shade:SetRenderOpacity((not closed and d.Pic) and 1.0 or 0.0)
+        d.Face:SetRenderOpacity((not closed and d.Pic) and 1.0 or 0.0)
         d.Closed = closed
     end
     local o = d.Over and 0.0 or (d.Positive and (d.Share or 1) or 1.0)
@@ -220,13 +216,13 @@ local function LookAtBuff(d)
         -- once per picture: a buff that the game never fills would stay unseen, and this line names it
         if over and d.Pic and not OverPics[d.Pic] then OverPics[d.Pic] = true Log("buff over, icon unseen: " .. d.Pic) end
     end
-    local name = BuffName(d)
+    local name = d.Name   -- read by ShadeBuff, which runs before every look
     d.Positive = POSITIVE[name] == true
-    d.Name = name
     if name and not over then
         if d.Positive and not Present[name] then d.Arrivals = (d.Arrivals or 0) + 1 end
         Next[name] = true
     end
+    BuffTime.Show(d, f, BUFF_ICON)
     PlaceBuff(d)
 end
 
@@ -237,7 +233,7 @@ local function DecorateBuff(E)
     local ok, err = pcall(function()
         local box = E.WidgetTree.RootWidget
         local ov = box:GetContent()
-        ClearOurs(ov, "RU_BuffShade")   -- a shadow of ours from an earlier round
+        ClearOurs(ov, "RU_Buff")   -- our face from an earlier round
         -- the game's two: the bar's Overlay and the icon, by class
         local icon, barBox
         for i = 0, ov:GetChildrenCount() - 1 do
@@ -254,31 +250,16 @@ local function DecorateBuff(E)
         box:SetWidthOverride(BUFF_BOX.W)
         box:SetHeightOverride(BUFF_BOX.H)
         E:SetRenderOpacity(1.0)   -- an entry that LookAtBuff left unseen in an earlier round, with its parts
-        icon:SetRenderOpacity(1.0)
-        bar:SetRenderOpacity(1.0)
+        -- the game's three are alive for the game and read, just unseen
+        icon:SetRenderOpacity(0.0)
+        bar:SetRenderOpacity(0.0)
+        title:SetRenderOpacity(0.0)
         -- the list can give the entry less height than its box (after leaving a house, 29-09-2026): nothing cuts it
         pcall(function() E:SetClipping(0) box:SetClipping(0) ov:SetClipping(0) end)
-        title:SetRenderOpacity(0.0)   -- alive for the game, just unseen
-        local function Place(W, v)    -- centred; at the middle (2) or the bottom (3) of its box
-            local s = W.Slot
-            s:SetHorizontalAlignment(2) s:SetVerticalAlignment(v) s:SetPadding(NO_PAD)
-        end
-        Place(barBox, 3) Place(bar, 3)
-        local shade = StaticConstructObject(StaticFindObject("/Script/UMG.Image"), E.WidgetTree, G("RU_BuffShade"))
-        shade:SetColorAndOpacity(BUFF_SHADE)
-        shade:SetRenderOpacity(0.0)   -- an Image without a picture is a plain box
-        -- the shadow, then the icon on top of it: an Overlay draws its last child last
-        ov:AddChildToOverlay(shade)
-        icon:RemoveFromParent()
-        ov:AddChildToOverlay(icon)
-        Place(shade, 2) Place(icon, 2)
-        shade:SetDesiredSizeOverride({ X = BUFF_ICON, Y = BUFF_ICON })
-        shade:SetRenderTranslation({ X = BUFF_SHADE_OFF, Y = BUFF_LIFT + BUFF_SHADE_OFF })
-        icon:SetDesiredSizeOverride({ X = BUFF_ICON, Y = BUFF_ICON })
-        icon:SetRenderTranslation({ X = 0, Y = BUFF_LIFT })
-        bar:SetDesiredSizeOverride({ X = BUFF_BAR.W, Y = BUFF_BAR.H })
-        bar:SetRenderTranslation({ X = 0, Y = BUFF_BAR_UP })
-        d.Box, d.Icon, d.Bar, d.Shade = box, icon, bar, shade
+        BuffTime.Build(E.WidgetTree, G, d, BUFF_ICON, BUFF_LIFT)
+        local s = ov:AddChildToOverlay(d.Face)
+        s:SetHorizontalAlignment(2) s:SetVerticalAlignment(2) s:SetPadding(NO_PAD)
+        d.Box, d.Icon, d.Bar = box, icon, bar
         pcall(ShadeBuff, d)
         pcall(LookAtBuff, d)   -- at once: after a respawn the poison that ended must not show until the next look
     end)
@@ -431,6 +412,7 @@ end
 function M.Forget(sameWorld)
     BuffItems, BuildTries = nil, {}
     Present, Next = {}, {}
+    BuffTime.Forget()
     BuffDeco, RingArt, Drinks.Deco, Drinks.Lists, Drinks.ListsKey, Drinks.Items = {}, {}, {}, {}, nil, nil
     if not sameWorld then BuffRowDone = {} end   -- the old world's lists are gone; a restart keeps the row
 end

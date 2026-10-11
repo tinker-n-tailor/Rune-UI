@@ -127,6 +127,12 @@ end
 M.TextsUnder = TextsUnder   -- the immersive mode reads the numbers on the bars with it
 M.Find = Find               -- and finds the tool bar's slot frames with this
 
+-- The half picture goes this far past the middle of the ring (0.5 of the 68 units, see tools/make-runemap-art.js), and
+-- the left box is wider by as much: the left half lies over the cut, or a full ring shows a gap at the top and the bottom.
+local SEAM = 0.5 / 68
+-- A share under this is drawn as empty: turned that little, the far end of the right half shows at the bottom.
+local EMPTY = 0.004
+
 -- One half of the coloured ring in a box that shows only its own side of the ring
 local function Half(tree, name, tex, colour, right, size)
     local cv = New("CanvasPanel", tree, name .. "Canvas")
@@ -136,7 +142,7 @@ local function Half(tree, name, tex, colour, right, size)
     s:SetAutoSize(false)
     s:SetSize({ X = size, Y = size })
     s:SetPosition({ X = right and -size / 2 or 0, Y = 0 })
-    local clip = Sized(tree, name, size / 2, size, cv)
+    local clip = Sized(tree, name, right and size / 2 or size * (0.5 + SEAM), size, cv)
     clip:SetClipping(1)   -- clip to its box
     return clip, img
 end
@@ -254,6 +260,7 @@ end
 -- Shows the share p (0..1) of the ring, clockwise from the top. b holds the two half pictures as Right and Left.
 local function Turn(b, p)
     local deg = p * 360
+    b.Right:SetRenderOpacity(p < EMPTY and 0.0 or 1.0)
     if p <= 0.5 then
         b.Right:SetRenderTransformAngle(deg - 180)
         b.Left:SetRenderOpacity(0.0)

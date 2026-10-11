@@ -49,6 +49,7 @@ function M.Build(H)
     local Util = { Log = Log, ById = ById, Uniq = Uniq, G = G, ClearOurs = ClearOurs, ClassName = ClassName,
         FindClass = FindClass, Asset = Asset, SetColor = SetColor,
         MayTry = MayTry, Failed = Failed, CachedTex = CachedTex, Survival = Survival,
+        BuffTime = LoadPart("bufftime"),   -- the icon of a buff as its timer (buffs.lua)
         GoldLine = LoadPart("goldline"),   -- the line under the bars, the XP bar and the quest tracker's top (goldline.lua)
         Chain = LoadPart("chain"),   -- the chain of delayed calls that paints about every frame (xp.lua, compass.lua)
         Near = LoadPart("nearby") }   -- which creatures, ore, herbs, essence and rare trees are near (the map and the compass)
@@ -57,12 +58,24 @@ function M.Build(H)
     Bars = LoadPart("bars")
     if Bars then Bars.Init(Util) AddPart("bars", Bars, Util) end
     Buffs = LoadPart("buffs")
+    -- the face of a buff is in its own file: without it the game's buffs stay
+    if Buffs and not Util.BuffTime then
+        Log("buffs: bufftime.lua did not load, the game's buffs stay")
+        Buffs = nil
+    end
     if Buffs then Buffs.Init(Util) AddPart("buffs", Buffs, Util) end
     RuneMap = LoadPart("runemap")
+    -- the map's four other files: without one of them there is no map
+    if RuneMap and not RuneMap.Init({ Look = LoadPart("maplook"), Widget = LoadPart("mapwidget"),
+        Creatures = LoadPart("mapcreatures"), Settings = LoadPart("mapsettings") }) then
+        Log("runemap: one of its files did not load, no map")
+        RuneMap = nil
+    end
     if RuneMap then
         RuneMap.Attach(Settings.Section(Cfg, "map"), SaveCfg, Settings)   -- the F8 settings and the zoom live in the settings file
         RuneMap.Near = Util.Near
         RuneMap.Res = LoadPart("resources")   -- ore, herbs, essence and rare trees on the map
+        RuneMap.Radar = LoadPart("radar")   -- the look of the map in a dungeon
     end
     Camera = LoadPart("camerarules")
     if Camera then
@@ -72,7 +85,7 @@ function M.Build(H)
     if MapPanel then MapPanel.Attach({ RuneMap = RuneMap, Creatures = ById("creatures"), Stay = Settings.STAY, Drawing = Settings.DRAWING }) end
     -- Editing: the map shows while F9 or F8 is open, even when it is hidden
     local MapCtx = { Log = Log, ById = ById, Asset = Asset, Editing = function() return Ed.Edit or Ed.Map end, Scan = Step.ScanSoon,
-        -- the immersive mode's share: the map fades itself, its gold rings too (runemap.lua ApplyOpacity)
+        -- the immersive mode's share: the map fades itself, its gold rings too (maplook.lua ApplyOpacity)
         -- with the map setting "Keep in immersive mode" at Map, the map stays
         Fade = function()
             if RuneMap and RuneMap.Set.Immersive == "Map" then return 1 end
@@ -80,7 +93,7 @@ function M.Build(H)
         end }
     AddPart("runemap", RuneMap, MapCtx)
     AddPart("survival", Survival, { Log = Log, ById = ById, ClearOurs = ClearOurs })
-    if RuneMap then   -- the icon reads the time through the map's reader: one read serves both (runemap.lua ReadClock)
+    if RuneMap then   -- the icon reads the time through the map's reader: one read serves both (maplook.lua ReadClock)
         AddPart("day and night icon", LoadPart("dial"), { Log = Log, ById = ById, Uniq = Uniq, ClearOurs = ClearOurs, CachedTex = CachedTex,
             MayTry = MayTry, Failed = Failed, ReadClock = RuneMap.ReadClock,
             On = function() return ById("dialskin").Visible end,
@@ -239,11 +252,26 @@ function M.Build(H)
                 MapShown = function() return RuneMap ~= nil and RuneMap.Visible == true end,
                 Set = function() return RuneMap and RuneMap.Set or {} end })
         end
+        -- The new markers of a step, for the two parts that read them: finder.lua hands a list out once, so the map
+        -- name takes it and the big map, the next part of the step, reads the same one. The big map empties it, so a
+        -- step in which the map name did not take a new list gives the big map no old one.
+        local NewMarkers = nil
+        local function TakeMarkers(class) NewMarkers = Finder.TakeArrivals(class) return NewMarkers end
+        local function SameMarkers() local list = NewMarkers NewMarkers = nil return list end
         P = LoadPart("mapname")   -- the map setting "Player name": off hides your own player name beside your marker on the maps
+        local MapName = P
         if P then
-            AddPart("map name", P, { Log = Log, Find = FindQuiet, Arrived = Finder.TakeArrivals,
+            AddPart("map name", P, { Log = Log, Find = FindQuiet, Arrived = TakeMarkers,
                 On = function() return not RuneMap or RuneMap.Set.Name ~= false end })
         end
+        P = LoadPart("bigmap")   -- the big map (M): faint quest areas with a shield, the plain pointer, three zoom levels
+        if P then
+            AddPart("big map", P, { Log = Log, Find = FindQuiet, Controller = Controller, Chain = Util.Chain,
+                Soon = ExecuteInGameThreadWithDelay, Arrived = MapName and SameMarkers or Finder.TakeArrivals,
+                SmallMap = function() return RuneMap and RuneMap.Map end })
+        end
+        P = LoadPart("pointer")   -- the mouse pointer: a gold arrow in place of the Windows arrow
+        if P then AddPart("pointer", P, { Log = Log, Controller = Controller, Name = FName }) end
         P = LoadPart("bednames")
         if P then AddPart("bed names", P, { Log = Log, Hook = RegisterHook, Text = FText, Find = Beds.Find }) end
         -- the crosshair setting: "immersive mode on" is its row in F6, the switch

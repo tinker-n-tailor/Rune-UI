@@ -171,7 +171,7 @@ function M.Save(t, path, order)
 end
 
 -- The older files, in the same table. read(name) gives a file's text or nil. The rules are LoadLayout's
--- (main.lua) and runemap.lua's, so a layout comes out exactly as the old code read it.
+-- (main.lua) and mapsettings.lua's, so a layout comes out exactly as the old code read it.
 local LAYOUT_FILES = { { "runeui_layout.txt", "hudeditor_layout_v2.txt" }, { "runeui_layout_2.txt" }, { "runeui_layout_3.txt" } }
 local MAP_KEYS = { Map = true, North = true, Mark = true, Smooth = true, Neutral = true, Ore = true, Herbs = true,
     Essence = true, Trees = true }

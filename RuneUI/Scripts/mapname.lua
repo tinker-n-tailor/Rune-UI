@@ -1,4 +1,4 @@
--- Your name on the map: the map setting "Player name" (F8, key Name in runemap.lua) off hides the name that the game
+-- Your name on the map: the map setting "Player name" (F8, key Name in mapsettings.lua) off hides the name that the game
 -- prints beside your own marker, on RuneMap and on the big map (M).
 -- The game draws a marker for each thing on a map, WBP_Dominion_MinimapInternal_Icon_C (the game's files, 1.0.0.5):
 -- its IconLabel shows the text that its MapIconComp gives. Your marker is the one whose component has the picture of the

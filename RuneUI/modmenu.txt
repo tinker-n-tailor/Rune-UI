@@ -67,6 +67,8 @@
       "tooltip": "Rune essence near you." },
     { "key": "map_Trees", "type": "toggle", "label": "Rare trees", "default": true,
       "tooltip": "Dead trees, yew, magic trees and anima bark near you." },
+    { "key": "map_Salvage", "type": "toggle", "label": "Salvage", "default": true,
+      "tooltip": "Salvage piles near you. A pile you took apart goes off the map." },
     { "key": "map_immersive", "type": "choice", "label": "Keep in immersive mode", "options": ["Nothing", "Map", "Compass"], "default": "Nothing",
       "tooltip": "What stays while the immersive mode is on. Nothing: the map and the compass are hidden. Map: the map stays, and the quest tracker with it. Compass: the game's compass stays. It has a gold line, and it shows the marks of the map. A compass hidden in the layout editor stays hidden." },
     { "key": "map_drawing", "type": "choice", "label": "Map refresh", "options": ["Every frame", "Every 2nd frame", "Every 4th frame"], "default": "Every 2nd frame",

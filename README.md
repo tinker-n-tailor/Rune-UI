@@ -95,6 +95,8 @@ To Eravex for [Move it Move it](https://www.nexusmods.com/runescapedragonwilds/m
 
 To Taylor Powell (tcpowell) for the idea and the first code of the map setting "Player name".
 
+To jonesing4space for fixes.
+
 ## Licence
 
 Rune UI is free to use, and its code is open to read. You may change it and send your change to the author. You may not upload it again, publish a changed version, or use parts of it in another mod without the written permission of the author. Versions 1.0 to 1.6 stay under the MIT licence. See `LICENSE`.

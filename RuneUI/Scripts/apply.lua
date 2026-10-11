@@ -195,7 +195,7 @@ local function ApplyOne(W, k, x, y, scale, E, isSelected, force, EditMode, MapMo
     -- KeepFull: a child that fills the element and must still fill the screen. It gets the inverse of the element's
     -- move and size, about the same middle: the element maps p to c + s*(p - c) + t, the child q to c + (q - c)/s - t/s.
     if E.KeepFull and moved then pcall(PlaceKeepFull, W, E, x, y, scale) end
-    -- fade: the share of the opacity that goes into the render opacity. RuneMap sets its own (runemap.lua): its
+    -- fade: the share of the opacity that goes into the render opacity. RuneMap sets its own (maplook.lua): its
     -- gold rings need it too.
     local fade = 1.0
     if not map then

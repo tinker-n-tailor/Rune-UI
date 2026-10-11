@@ -29,8 +29,9 @@ local STAMP = tostring(os.time())   -- in each name: a restart of the mod in the
 local ART = (RUNEUI_DIR or "ue4ss/Mods/RuneUI/") .. "Art/"
 -- the map's shapes without their dark outline: on the fine compass the outline was too heavy (in game, 04-10-2026)
 local FILES = { Enemy = "compass_enemy.png", Calm = "compass_neutral.png", Ore = "compass_ore.png",
-    Herbs = "compass_herb.png", Essence = "compass_essence.png", Trees = "compass_tree.png" }
-local ORDER = { "Enemy", "Calm", "Ore", "Herbs", "Essence", "Trees" }   -- the groups, in a fixed order
+    Herbs = "compass_herb.png", Essence = "compass_essence.png", Trees = "compass_tree.png",
+    Salvage = "compass_salvage.png" }
+local ORDER = { "Enemy", "Calm", "Ore", "Herbs", "Essence", "Trees", "Salvage" }   -- the groups, in a fixed order
 local FAST = 8                  -- ms between two calls of the chain
 local ALIVE = 0.1                -- seconds: a chain that called this lately paints; the step does not paint again
 local GONE = "the marks are gone from the compass"   -- the error for a widget that the game freed
@@ -62,7 +63,7 @@ end
 -- "Creatures" has three values: Off, Enemies only (set.Neutral false) and All.
 function M.Groups(set, creatures)
     return { Enemy = creatures, Calm = creatures and set.Neutral == true, Ore = set.Ore == true, Herbs = set.Herbs == true,
-        Essence = set.Essence == true, Trees = set.Trees == true }
+        Essence = set.Essence == true, Trees = set.Trees == true, Salvage = set.Salvage == true }
 end
 
 -- The marks show while the compass is shown, the map is not, and a group is on.
@@ -271,6 +272,8 @@ end
 
 -- The things near the player, as the map has them: creatures every 2 s, resources every 10 s. The ones of a group that
 -- is off, a dead creature, an empty rock and a group with no picture are left out. Then the places of the creatures are read.
+-- One search in a step, as on the map (runemap.lua, Tick): two in one step were the mod's longest step, 8 to 10 ms
+-- (perf log of 11-10-2026). The search that waits keeps its time and runs at the next step.
 local function Scan(ctx, now, groups, pawn)
     if now >= M.NextCreatures then
         M.NextCreatures = now + CREATURES_EVERY
@@ -281,11 +284,10 @@ local function Scan(ctx, now, groups, pawn)
             end
         end
         M.Creatures, M.Dirty, M.Odd = list, true, true   -- Odd: the new list is read at once (Refresh)
-    end
-    if now >= M.NextResources then
+    elseif now >= M.NextResources then
         M.NextResources = now + RESOURCES_EVERY
         local list = {}
-        if groups.Ore or groups.Herbs or groups.Essence or groups.Trees then
+        if groups.Ore or groups.Herbs or groups.Essence or groups.Trees or groups.Salvage then
             for _, e in ipairs(ctx.Near.Resources(ctx, pawn)) do
                 if not e.Empty and groups[e.Group] and M.Tex[e.Group] then
                     local ok, p = pcall(function() return e.A:K2_GetActorLocation() end)
@@ -296,6 +298,15 @@ local function Scan(ctx, now, groups, pawn)
         M.Resources, M.Dirty = list, true
     end
     Refresh()
+end
+
+-- The things of a group that was switched off go at once, with no search: the searches that follow come one in a step.
+local function DropOff(list, groups)
+    local keep = {}
+    for _, t in ipairs(list) do
+        if groups[t.Group] then keep[#keep + 1] = t end
+    end
+    return keep
 end
 
 local function More() return M.Runs(M.Want, #M.Creatures + #M.Resources) end
@@ -346,8 +357,13 @@ function M.Tick(ctx)
         -- a group switched on or off shows at once, as on the map; the scan then runs again
         local sig = 0
         for _, g in ipairs(ORDER) do sig = sig * 2 + (groups[g] and 1 or 0) end
-        if sig ~= M.Key then M.Key, M.NextCreatures, M.NextResources = sig, 0, 0 end
-        if pawn and pawn:IsValid() and ctx.Near then
+        if sig ~= M.Key then
+            M.Key, M.NextCreatures, M.NextResources = sig, 0, 0
+            M.Creatures, M.Resources, M.Dirty = DropOff(M.Creatures, groups), DropOff(M.Resources, groups), true
+        end
+        -- M.Want is still the step before: no search in the step where the marks come on. That step holds the build of the
+        -- marks, or the map's own last search (the map's part runs first).
+        if M.Want and pawn and pawn:IsValid() and ctx.Near then
             local ok, err = pcall(Scan, ctx, now, groups, pawn)
             if not ok then
                 M.NextCreatures, M.NextResources = now + CREATURES_EVERY, now + RESOURCES_EVERY

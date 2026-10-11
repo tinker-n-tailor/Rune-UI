@@ -115,6 +115,13 @@ local function Unpaint(m)
         local t = Saved[m.Key .. "#brush"]
         Saved[m.Key .. "#brush"] = nil
         m.W:SetBrushTintColor({ SpecifiedColor = t or { R = 1, G = 1, B = 1, A = 1 }, ColorUseRule = 0 })
+        local path = Saved[m.Key .. "#tex"]   -- the game's picture under our diamond (Spell)
+        local tex = path and Obj(path)
+        if tex and tex:IsValid() then
+            Saved[m.Key .. "#tex"] = nil
+            m.W:SetBrushFromTexture(tex, false)
+        end
+        m.Tex = nil
     end
     if m.Kind == "image" then m.W:SetColorAndOpacity(o or { R = 1, G = 1, B = 1, A = m.W.ColorAndOpacity.A })
     elseif m.Kind == "bar" then m.W:SetFillColorAndOpacity(o or { R = 1, G = 1, B = 1, A = m.W.FillColorAndOpacity.A })
@@ -142,6 +149,36 @@ local function Marks(ctx)
     for _, m in ipairs(M.Marks) do
         local ok, err = pcall(Paint, m)
         if not ok then Once(ctx, "paint" .. m.Name, "aim: " .. m.Name .. " not gold: " .. tostring(err)) end
+    end
+end
+
+-- The mark of an aimed spell (MagicIcon: the game's two arcs, in WBP_ReticleAimingUtilityMagic_C) is our diamond, the
+-- picture of the staff's target ring; Paint makes it gold. The image holds the texture, and keeps its size. The game's
+-- picture is kept by its path and found again by it (Unpaint). Written again when the game put its own picture back.
+-- Our picture is checked by its full name too: the engine frees it when the game takes it off the image, and a freed
+-- slot can hold a new valid object.
+local function Spell(ctx)
+    if M.NoMark then return end   -- the picture did not load once: not read from disk every half second
+    for _, m in ipairs(M.Marks) do
+        if m.Name == "MagicIcon" and m.W:IsValid() then
+            local now = m.W.Brush.ResourceObject
+            local game = now and now:IsValid()
+            if not (m.Tex and m.Tex:IsValid() and m.Tex:GetFullName() == m.TexName) then m.Tex = nil end
+            if not (m.Tex and game and now:GetAddress() == m.Tex:GetAddress()) then
+                local full = game and now:GetFullName()
+                if full and not Saved[m.Key .. "#tex"] and string.find(full, " /Game/", 1, true) then
+                    Saved[m.Key .. "#tex"] = string.match(full, "^%S+%s+(.*)$") or full
+                end
+                if not m.Tex then
+                    local KRL = Obj("/Script/Engine.Default__KismetRenderingLibrary")
+                    local okT, tex = pcall(function() return KRL:ImportFileAsTexture2D(m.W, ART_DIR .. "mark_diamond.png") end)
+                    if not (okT and tex and tex:IsValid()) then M.NoMark = true Once(ctx, "marktex", "aim: mark picture not loaded") return end
+                    m.Tex, m.TexName = tex, tex:GetFullName()
+                end
+                m.W:SetBrushFromTexture(m.Tex, false)
+                Once(ctx, "spell", "aim: gold diamond on the aimed spell")
+            end
+        end
     end
 end
 
@@ -271,7 +308,7 @@ end
 
 -- a new world: the handles go; Saved stays (see there). The ring template is not the world's: it stays too.
 function M.Forget()
-    M.Marks, M.Host, M.Orb, M.NoPicture, M.RingTries = {}, nil, nil, nil, 0
+    M.Marks, M.Host, M.Orb, M.NoPicture, M.NoMark, M.RingTries = {}, nil, nil, nil, nil, 0
     Logged = {}
 end
 
@@ -289,6 +326,8 @@ function M.Tick(ctx)
     M.Applied = true
     local okM, errM = pcall(Marks, ctx)
     if not okM then Once(ctx, "marks", "aim: marks failed: " .. tostring(errM)) end
+    local okS, errS = pcall(Spell, ctx)
+    if not okS then Once(ctx, "spellfail", "aim: aimed spell mark failed: " .. tostring(errS)) end
     local okI, errI = pcall(Ring, ctx)
     if not okI then Once(ctx, "ring", "aim: target ring failed: " .. tostring(errI)) end
     local okD, errD = pcall(Diamond, ctx)

@@ -4,6 +4,36 @@ All changes to Rune UI, newest first.
 
 ## [Unreleased]
 
+## [1.12] - 2026-10-11
+
+### Added
+
+- A redesigned mouse pointer.
+- Quest icons on the big map: gold for the main quest, blue for a side quest, green for a task.
+- A grid in the editor (F9). G hides it.
+- A salvage pile indicator on RuneMap and on the compass.
+
+### Changed
+
+- Buffs and debuffs have new flat icons. An icon empties as its time runs out, in place of the thin bar under it.
+- The mark of an aimed spell is the gold diamond.
+- The page arrows of the spell wheel sit closer to the circles.
+- The circle of a quest area on the big map is faint, and it no longer blocks the mouse.
+- The white triangle of a quest area is smaller and sits beside the shield. On RuneMap it has the size of the map's icons.
+- The big map zooms in three steps: close, the zone, the whole map.
+- Map icons show the game's pointer, not the cross.
+- In a dungeon, RuneMap is a radar: a dark plate with your arrow, the creatures and the resources. It showed a flat grey before.
+
+### Fixed
+
+- A visual fix for the survival and buff rings.
+- The big map no longer gets slower in a long session while RuneMap is hidden or faded out.
+- The mod no longer takes more memory with every minute of play.
+- Four fixes from jonesing4space: a new buff shows at once, RuneMap stutters less, a changed map setting no longer redraws the map, a failed map leaves the screen.
+- The frame of the editor has the real size of a part: it was too big, or beside the part.
+- Minor visual tweaks.
+- The compass causes a shorter stutter when it looks for creatures and resources.
+
 ## [1.11] - 2026-10-10
 
 ### Added

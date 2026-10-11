@@ -13,7 +13,7 @@ local PANEL_BG = "/Game/Art/UI/ShaderWork/MI_Menu_PanelBG_Shared.MI_Menu_PanelBG
 local WIDTH, PAD = 460, 28   -- 420 left four key boxes and a long name no room
 local INNER = WIDTH - 2 * PAD
 local MAP_W, MAP_H = INNER, math.floor(INNER * 9 / 16)   -- the screen map: a 16:9 screen
-M.ROWS, M.BOXES, M.KEYS, M.CAPS = 10, 40, 8, 4            -- list lines (group titles too), map boxes, key cells, caps a cell
+M.ROWS, M.BOXES, M.KEYS, M.CAPS = 10, 40, 10, 4           -- list lines (group titles too), map boxes, key cells, caps a cell
 
 local function Lin1(c) if c <= 0.04045 then return c / 12.92 end return ((c + 0.055) / 1.055) ^ 2.4 end
 local function Hex(h, a)
@@ -98,6 +98,14 @@ local function Build(ctx)
     uw.WidgetTree = tree
     local canvas = W("CanvasPanel")
     tree.RootWidget = canvas
+
+    -- the grid, made first: it draws under the mark and the panel (grid.lua; nil when that file did not load). In a
+    -- pcall here and in Update: a grid that fails leaves the panel at work, with no grid.
+    M.Grid = ctx.Grid
+    if M.Grid then
+        local ok, grid = pcall(M.Grid.Build, W, canvas)
+        if ok then U.Grid = grid else ctx.Log("panel: no grid: " .. tostring(grid)) end
+    end
 
     -- the mark on the selected element: the corners, and the name tag above them
     local corners = Nine(Art("edit_corners.png"), 64, 0.45, GOLD)
@@ -402,6 +410,7 @@ function M.Update(v)
             k.Act:SetText(FText(e[2]))
         end
     end
+    if U.Grid and not pcall(M.Grid.Update, U.Grid, v.Grid) then U.Grid = nil end   -- a grid that failed is not tried at every step
     -- the mark on the game screen
     local m = v.Mark
     Show(U.MarkW, m ~= nil)
@@ -413,7 +422,7 @@ function M.Update(v)
             U.SampleS:SetPosition({ X = m.X, Y = m.Y + math.max(0, (m.H - 20) / 2) })
             U.SampleS:SetSize({ X = m.W, Y = 20 })
         end
-        local g = 8   -- the corners sit a little outside the element
+        local g = 0   -- the corners sit on the element's edge: the frame is its real size, to line up on the grid
         U.Mark:SetPosition({ X = m.X - g, Y = m.Y - g })
         U.Mark:SetSize({ X = m.W + 2 * g, Y = m.H + 2 * g })
         U.TagName:SetText(FText(m.Name))

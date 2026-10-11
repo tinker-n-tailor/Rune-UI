@@ -30,7 +30,7 @@ end
 
 function R.Scan(ctx, M)
     local S = M.Set
-    if not (S.Ore or S.Herbs or S.Essence or S.Trees) or not M.ResTex or not M.Near then
+    if not (S.Ore or S.Herbs or S.Essence or S.Trees or S.Salvage) or not M.ResTex or not M.Near then
         if next(Icons) then R.Drop() end   -- all off: no icons and no search
         return
     end
@@ -47,7 +47,7 @@ function R.Scan(ctx, M)
             if not c then
                 if not S[group] or not M.ResTex[group] or added >= ADD_PER_SCAN then return end
                 added = added + 1
-                local icon = M.H.MapIcon(e.A, M.ResTex[group])   -- the creatures' size and the same call (runemap.lua)
+                local icon = M.H.MapIcon(e.A, M.ResTex[group])   -- the creatures' size and the same call (mapcreatures.lua)
                 if not icon then return end
                 c = { Icon = icon, Shown = nil, Group = group }
                 Icons[n] = c

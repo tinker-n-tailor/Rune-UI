@@ -17,7 +17,12 @@ local BAND_TOP, BAND_BOTTOM = 0.426, 0.574   -- the brown band is the middle str
 -- bottom line was seen in the game. The top line is the same half turned over, so both lines are one picture.
 local LINES_FROM, LINES_TO = 0.499, 0.578
 local GAP = 0   -- units between the band's edge and the line's image, top and bottom. 0: the lines sit on the edges (the owner's word, 08-10-2026).
-local ALIGN_FILL, ALIGN_CENTRE = 0, 2   -- the alignments of a slot in an Overlay (the same numbers on both axes)
+-- Both lines sat one pixel too low against the band, on the warning and on the status line alike: the top line 4 rows inside
+-- the band, the bottom one 2 (the game's screenshots of 11-10-2026, 2560 x 1440, the two bands at different sizes). Pinning
+-- the images to the band's edges changed nothing, so the pixel is in how the engine draws the band's picture. LIFT moves both
+-- lines up, in units: 0.75 is that pixel. After it both lines sat 2 rows inside (screenshot of the same day).
+local LIFT = 0.75
+local ALIGN_FILL, ALIGN_TOP, ALIGN_BOTTOM = 0, 1, 3  -- the alignments of a slot in an Overlay (0 fills on both axes)
 local COLLAPSED, UNTOUCHABLE = 1, 3   -- ESlateVisibility; 3: seen, and the mouse goes through it
 
 local Made = 0
@@ -276,12 +281,14 @@ end
 
 -- Two gold lines outside the band, as on the new area banner: images of ours with that banner's lines picture, in the Overlay
 -- that holds the band. Both draw the same half of the picture's strip, the top one turned over (a render scale of -1 down,
--- about its centre), so the two lines are alike and run the whole width of the Overlay. A part is { Name, Out (-1 up, 1 down) }.
--- Each image is half the band image's height, centred and moved a quarter of that height plus GAP out. So each line sits about
--- GAP units outside the band's edge.
+-- about its centre), so the two lines are alike and run the whole width of the Overlay. A part is { Name, Out (-1 up, 1 down),
+-- Align (the slot's vertical alignment) }. Each image is half the band image's height and is pinned to its own edge of the
+-- Overlay, the top one to the top and the bottom one to the bottom, then moved GAP out. So the layout puts the outer edge of
+-- each image on the band's edge. Centred and moved out by a quarter of the height, the top line sat 2 pixels further inside
+-- the band than the bottom one (the game's screenshot of 11-10-2026, 2560 x 1440): half pixels round the same way for both.
 local TWO = {
-    { Name = "RU_NoticeLinesTop", Out = -1 },
-    { Name = "RU_NoticeLinesBottom", Out = 1 },
+    { Name = "RU_NoticeLinesTop", Out = -1, Align = ALIGN_TOP },
+    { Name = "RU_NoticeLinesBottom", Out = 1, Align = ALIGN_BOTTOM },
 }
 
 -- One of the lines, made and set but not in the tree yet
@@ -295,7 +302,7 @@ local function LineImage(env, info, tex, size, part)
     img:SetBrush(b)
     img:SetColorAndOpacity({ R = GOLD.R, G = GOLD.G, B = GOLD.B, A = 1 })
     img:SetVisibility(UNTOUCHABLE)
-    img:SetRenderTranslation({ X = 0, Y = part.Out * (size.Y / 4 + GAP) })
+    img:SetRenderTranslation({ X = 0, Y = part.Out * GAP - LIFT })
     if part.Out < 0 then
         img:SetRenderTransformPivot({ X = 0.5, Y = 0.5 })
         img:SetRenderScale({ X = 1, Y = -1 })
@@ -318,11 +325,11 @@ function S.Lines(env, W, info)
     local images, added = {}, {}
     for i, part in ipairs(TWO) do images[i] = LineImage(env, info, tex, size, part) end
     local ok, err = pcall(function()
-        for _, img in ipairs(images) do
+        for i, img in ipairs(images) do
             local slot = parent:AddChildToOverlay(img)
             added[#added + 1] = img
             slot:SetHorizontalAlignment(ALIGN_FILL)
-            slot:SetVerticalAlignment(ALIGN_CENTRE)
+            slot:SetVerticalAlignment(TWO[i].Align)
         end
     end)
     if not ok then

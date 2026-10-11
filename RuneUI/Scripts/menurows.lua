@@ -42,7 +42,7 @@ function M.Add(H)
             function(v) I.Wait = math.floor(Settings.Num(v, 3, 30, 8) + 0.5) Ed.Save = true end)
         if RuneMap then
             local S = RuneMap.Set
-            for _, k in ipairs({ "Map", "North", "Mark", "Name", "Ore", "Herbs", "Essence", "Trees" }) do
+            for _, k in ipairs({ "Map", "North", "Mark", "Name", "Ore", "Herbs", "Essence", "Trees", "Salvage" }) do
                 Row("map_" .. k, function() return S[k] end, function(v) S[k] = v == true RuneMap.Dirty = true end)
             end
             Row("map_immersive", function() return S.Immersive end,
@@ -73,7 +73,7 @@ function M.Add(H)
             -- of a step, and the panel is filled at the end of the same step: with no list yet, the first fill
             -- failed and the panel stayed blank.
             OpenEditor = function()
-                Ed.Map, Ed.Edit = false, true
+                Ed.Map, Ed.Edit, Ed.Grid = false, true, true   -- the grid shows whenever the editor opens, as with F9
                 if Camera then Camera.Open = false end
                 if Skin then Skin.Open = false end
                 pcall(H.Overlay.SortOrder)

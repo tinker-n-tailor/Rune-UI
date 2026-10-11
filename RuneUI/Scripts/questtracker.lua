@@ -9,6 +9,8 @@
 -- one save). Data (QuestData) has QuestName, bIsMainQuest, bHideInQuestList and ObjectiveTexts, a map of step key to
 -- step text, in the order held. The step is ObjectiveTexts[CurrentObjective]. "None" is a real key. A key with no
 -- text gives the name only.
+-- A hint under the step, in a softer gold: only when the quest helper Rune Quest is in the Mods folder next to this mod.
+-- Its hints file (quest id -> step key -> text) is read once; this mod has no hints of its own.
 -- main.lua moves and sizes it as the F9 element "questtracker" and loads this file with pcall, so an error here leaves
 -- the rest of the mod running.
 
@@ -23,8 +25,10 @@ local GOLD = { R = 1.0, G = 0.638, B = 0.168, A = 1.0 }      -- the pick-up coun
 local WHITE = { R = 1, G = 1, B = 1, A = 1 }
 local DIM = { R = 1, G = 1, B = 1, A = 0.55 }
 local OFFSET, SHADE = { X = 1.5, Y = 1.5 }, { R = 0, G = 0, B = 0, A = 0.85 }   -- the letters' shadow (letters.lua)
-local SIZE = { Label = 9, Name = 14, Step = 12, Next = 10 }
-local LABEL = { Main = "Main quest", Tracked = "Tracked" }
+local HINT = { R = 1.0, G = 0.82, B = 0.52, A = 0.9 }
+local SIZE = { Label = 9, Name = 14, Step = 12, Hint = 11, Next = 10 }
+local HINTS_FILE = (RUNEUI_DIR or "ue4ss/Mods/RuneUI/") .. "../RuneQuest/Scripts/hints.lua"
+local LABEL = { Main = "Main quest", Tracked = "Tracked side quest" }
 
 ---------------------------------------------------------------- what to show, without the game (tools/test-questtracker.js)
 
@@ -96,10 +100,19 @@ function M.NextSteps(steps, key, limit)
     return out
 end
 
--- One quest as it shows: { Title, Step, Next }. Step is nil when the game has no text for the step; the name stays.
-function M.Describe(q, steps, showNext)
+-- The hints of a file that returns them as a table; none when the file is not there or does not give a table.
+function M.ReadHints(path)
+    local ok, t = pcall(dofile, path)
+    return ok and type(t) == "table" and t or {}
+end
+
+-- One quest as it shows: { Title, Step, Hint, Next }. Step is nil when the game has no text for the step; the name
+-- stays. hints: quest id -> step key -> text, or nil. A step with no text of the game shows its hint as the step.
+function M.Describe(q, steps, showNext, hints)
     local step = M.StepText(steps, q.Step)
-    return { Title = q.Title ~= "" and q.Title or q.Id, Step = step,
+    local hint = hints and type(hints[q.Id]) == "table" and hints[q.Id][q.Step] or nil
+    if type(hint) ~= "string" then hint = nil end
+    return { Title = q.Title ~= "" and q.Title or q.Id, Step = step or hint, Hint = step and hint or nil,
         Next = showNext and step and M.NextSteps(steps, q.Step, NEXT_MAX) or {} }
 end
 
@@ -116,7 +129,7 @@ local function New(cls, outer, name) return StaticConstructObject(Obj("/Script/U
 local Logged = {}
 local function Once(ctx, key, msg) if not Logged[key] then Logged[key] = true ctx.Log(msg) end end
 
--- One block's texts: a label, the name, the step and the next steps, right-aligned and wrapping at the box's width.
+-- One block's texts: a label, the name, the step, the hint and the next steps, right-aligned and wrapping at the box's width.
 local function Block(ctx, tree, i)
     local n = "RU_Qt" .. i
     local box = New("VerticalBox", tree, n)
@@ -133,7 +146,7 @@ local function Block(ctx, tree, i)
         return { W = T }
     end
     local b = { Box = box, Label = Line("Label", SIZE.Label, DIM, 0), Name = Line("Name", SIZE.Name, GOLD, 2),
-        Step = Line("Step", SIZE.Step, WHITE, 2), Next = {} }
+        Step = Line("Step", SIZE.Step, WHITE, 2), Hint = Line("Hint", SIZE.Hint, HINT, 3), Next = {} }
     for k = 1, NEXT_MAX do b.Next[k] = Line("Next" .. k, SIZE.Next, DIM, 3) end
     box:SetVisibility(1)
     return b
@@ -234,7 +247,8 @@ local function Look(ctx)
     local key = M.Sig .. (showNext and "+" or "-")
     if key == M.Key then return end
     M.Key = key
-    local function Make(q) return q and M.Describe(q, ReadSteps(datas[q.Id]), showNext) or nil end
+    M.Hints = M.Hints or M.ReadHints(HINTS_FILE)
+    local function Make(q) return q and M.Describe(q, ReadSteps(datas[q.Id]), showNext, M.Hints) or nil end
     M.Main, M.Tracked = Make(main), Make(tracked)
 end
 
@@ -257,6 +271,7 @@ local function Show(b, d, label)
     SetLine(b.Label, string.upper(label))
     SetLine(b.Name, d.Title)
     SetLine(b.Step, d.Step)
+    SetLine(b.Hint, d.Hint)
     for i = 1, NEXT_MAX do SetLine(b.Next[i], d.Next[i]) end
 end
 

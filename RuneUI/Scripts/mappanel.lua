@@ -1,19 +1,19 @@
 -- The Rune Map panel (F8): its rows, the value and the hint of each, and what the keys do.
--- runemap.lua holds the settings (Set) and saves them when Dirty is set. The Creatures row also uses the layout's
+-- The map's table holds the settings (Set), and mapsettings.lua saves them when Dirty is set. The Creatures row also uses the layout's
 -- "creatures" switch, which each profile has for itself.
 -- No game calls of its own, so tools/test-hints.js and tools/test-panels.js run it without the game. main.lua draws
 -- the panel from View.
 local M = {}
 
 M.ROWS = { "Rune Map", "Faces north", "North mark", "Player name", "Creatures", "Ore", "Herbs", "Essence", "Rare trees",
-    "Keep in immersive mode", "Zoom", "Map refresh" }
+    "Salvage", "Keep in immersive mode", "Zoom", "Map refresh" }
 -- the group title above a row
 local HEADS = { Creatures = "What the map shows", ["Keep in immersive mode"] = "Behaviour" }
--- the rows that are a plain On / Off, and the setting in runemap.lua each one flips. "Keep in immersive mode" steps
+-- the rows that are a plain On / Off, and the setting in mapsettings.lua each one flips. "Keep in immersive mode" steps
 -- through Nothing, Map and Compass (settings.lua STAY), Creatures and "Map refresh" (settings.lua DRAWING) through three
 -- values: Value and Change have them.
 local SWITCH = { ["Rune Map"] = "Map", ["Faces north"] = "North", ["North mark"] = "Mark", ["Player name"] = "Name", Ore = "Ore",
-    Herbs = "Herbs", Essence = "Essence", ["Rare trees"] = "Trees" }
+    Herbs = "Herbs", Essence = "Essence", ["Rare trees"] = "Trees", Salvage = "Salvage" }
 -- the rows with more than two values: the list shows "< value >", so a player sees that Left and Right give more
 -- than what is shown
 local CHOICE = { Creatures = true, ["Keep in immersive mode"] = true, Zoom = true }
@@ -47,6 +47,7 @@ local HINTS = {
     Herbs = { On = "Wild herbs near you. A picked herb goes off the map.", Off = "No herbs on the map." },
     Essence = { On = "Rune essence near you.", Off = "No rune essence on the map." },
     ["Rare trees"] = { On = "Dead trees, yew, magic trees and anima bark near you.", Off = "No rare trees on the map." },
+    Salvage = { On = "Salvage piles near you. A pile you took apart goes off the map.", Off = "No salvage piles on the map." },
     ["Keep in immersive mode"] = { Nothing = "The immersive mode hides the map and the compass.",
         Map = "The map and the quest tracker stay in the immersive mode. The compass is away." },   -- Compass: Hint
     ["Map refresh"] = { ["Every frame"] = "The map draws every frame. Switching might decrease performance.",

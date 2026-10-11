@@ -20,7 +20,11 @@ local PAD = { Name = { Bottom = 137 }, Requirement = { Top = 122 } }
 -- the slot's ring, whose middle is at 68.75, 60 of the slice.
 local ARC = { Scale = { X = 2.6, Y = 2.6 }, Move = { X = 35.75, Y = 32 }, Gold = { R = 0.76, G = 0.48, B = 0.10, A = 1 },
     Hide = { "BackgroundRing", "IconImage", "CooldownText" } }
-local FONT_AGAIN, FONT_TRIES = 10, 6   -- the HUD font not found yet: seconds to the next try, and how many tries
+-- The two page arrows (BigArrowL, BigArrowR) sit 437 units from the middle, outside the half rings of the next and the
+-- last spellbook (RadialL, RadialR). The mod's look does not show those rings, and the slots' rings end at about 250,
+-- so the arrows looked lost (look of 11-10-2026). ARROW_IN moves each towards the middle, in units.
+local ARROW_IN = 130
+local FONT_AGAIN, FONT_TRIES = 10, 6  -- the HUD font not found yet: seconds to the next try, and how many tries
 local SKIP = { CostBox = true }        -- taken, but not entered: a walk into the rune cost widget crashed the game
 -- Under the wheel, beside the spell's name: "Cooldown 0s" and the room around it go, as the slot shows the cooldown.
 local UNDER = { "Cooldown", "CooldownText", "CooldownUnits", "Spacer_67", "Spacer_116" }
@@ -130,6 +134,27 @@ local function Arc(P, J, w)
     return missing
 end
 
+-- The boxes of the two page arrows, by name. They are no variables of the wheel (seen in the game, 11-10-2026), so they
+-- are reached down its tree, the way the look of that day walked it: RadialSelectorSBox > Overlay_0 > VerticalBox_1 >
+-- RadialContentOverlay, and there by name. Each step is checked before the next call on it.
+local function Arrows(w)
+    local out = {}
+    pcall(function()
+        local tree = w.W.WidgetTree
+        local at = Ok(tree) and tree.RootWidget
+        at = Ok(at) and at:GetContent()
+        at = Ok(at) and at:GetChildAt(0)
+        at = Ok(at) and at:GetChildAt(0)
+        if not Ok(at) then return end
+        for i = 0, at:GetChildrenCount() - 1 do
+            local c = at:GetChildAt(i)
+            local name = Ok(c) and c:GetFName():ToString()
+            if name == "BigArrowL" or name == "BigArrowR" then out[name] = c end
+        end
+    end)
+    return out
+end
+
 -- Our look on what only Q has. Returns nil, or the names of the parts that were not found, for the log.
 function M.Style(ctx, P, J, w, now)
     local gone = {}
@@ -159,6 +184,11 @@ function M.Style(ctx, P, J, w, now)
             end
         else gone[#gone + 1] = "CostBox" end
     else gone[#gone + 1] = "SpellName" end
+    local arrows = Arrows(w)
+    for _, a in ipairs({ { "BigArrowL", ARROW_IN }, { "BigArrowR", -ARROW_IN } }) do
+        local arrow = arrows[a[1]]
+        if arrow then P.Set(J, "Q/" .. a[1], arrow, "Move", { X = a[2], Y = 0 }) else gone[#gone + 1] = a[1] end
+    end
     w.FontTries, w.Want = 0, {}
     M.Fonts(ctx, P, J, w, now)
     M.Fit(P, J, w)

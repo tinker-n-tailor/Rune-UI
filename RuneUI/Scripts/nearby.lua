@@ -17,7 +17,7 @@ local NEUTRAL = { "Deer", "Stag", "Rabbit", "Hare", "Chicken", "Sheep", "Cow", "
 
 ---------------------------------------------------------------- what a thing is, without the game (tools/test-nearby.js)
 
--- class name -> "Ore", "Herbs", "Essence", "Trees" or false. Names from the F7 probe in the game (29-09-2026); yew
+-- class name -> "Ore", "Herbs", "Essence", "Trees", "Salvage" or false. Names from the F7 probe in the game (29-09-2026); yew
 -- and magic trees are not seen yet, so theirs are a guess
 function N.Decide(cls)
     local ore = string.match(cls, "^BP_OreNode_(%a+)")
@@ -28,6 +28,9 @@ function N.Decide(cls)
     -- the dead tree is the bare ash (the wiki: hollow bark and ash logs); yew and magic are late and rare
     if string.find(cls, "Tree", 1, true) and (string.find(cls, "Ash_Bare", 1, true) or string.find(cls, "Yew", 1, true)
         or string.find(cls, "Magic", 1, true)) then return "Trees" end
+    -- The salvage piles: BP_BaseSalvageableResource_Textile_C and its five sisters, and BP_Spawner_Salvage_Metal_C. All are
+    -- WorldActors, so the search has them already, and a full pile reads 1 resource left (look of 11-10-2026).
+    if string.find(cls, "SalvageableResource", 1, true) or string.find(cls, "Spawner_Salvage", 1, true) then return "Salvage" end
     return false
 end
 
@@ -60,6 +63,14 @@ end
 
 -- An out parameter from UE4SS 3.0.1: it fills the table passed in with the actors, 1 to n (log of 29-09-2026).
 -- An element may come as the object or as a holder of it (e:get()).
+-- UE4SS keeps every such table in Lua's registry and never lets it go. A new table per search stayed for the whole
+-- run with its actors: 36 tables and 730 holders a minute from the compass alone, a quarter MB a minute (the census
+-- of 11-10-2026). So every search gives the same table, emptied first.
+local Out = {}
+local function EmptyOut()
+    for k in pairs(Out) do Out[k] = nil end
+    return Out
+end
 local function OutActors(out)
     local list = {}
     for _, e in ipairs(out) do
@@ -78,7 +89,7 @@ end
 -- The first way that works stays.
 local CREATURE_WAYS = {
     { "the overlap query", function(cls, pawn)
-        local out = {}
+        local out = EmptyOut()
         -- true when anything overlaps; then an empty table means UE4SS gave the list some other way
         local hit = Obj("/Script/Engine.Default__KismetSystemLibrary"):SphereOverlapActors(pawn,
             pawn:K2_GetActorLocation(), N.CREATURE_RADIUS, { 2 }, cls, {}, out)   -- 2: the pawn object type
@@ -87,7 +98,7 @@ local CREATURE_WAYS = {
         return list
     end },
     { "the game's list", function(cls, pawn)
-        local out = {}
+        local out = EmptyOut()
         Obj("/Script/Engine.Default__GameplayStatics"):GetAllActorsOfClass(pawn, cls, out)
         return OutActors(out)
     end },
@@ -159,7 +170,7 @@ function N.Resources(ctx, pawn)
         world = Obj("/Script/Engine.Actor")
         if not Warned then Warned = true ctx.Log("nearby: no WorldActor class, searching every actor") end
     end
-    local types, found = {}, {}
+    local types, found = {}, EmptyOut()
     for t = 0, 15 do types[#types + 1] = t end
     Obj("/Script/Engine.Default__KismetSystemLibrary"):SphereOverlapActors(pawn, pawn:K2_GetActorLocation(),
         N.RESOURCE_RADIUS, types, world, {}, found)

@@ -10,7 +10,9 @@ local M = {}
 -- drawing of the panel (editor.lua, nil when it did not load).
 local Log, Elements, Defaults, Groups, Ed, Prof, KEY, Parts, ListPanel, Panels, Layout, Engine, World, MayTry, Failed, Editor
 local Hud, ById, IsSwitch, FinalCenter, ScreenBox, Spot
+local Grid   -- grid.lua, nil when it did not load: then F9 has no grid
 function M.Init(ctx)
+    Grid = ctx.Grid
     Log, Elements, Defaults, Groups, Ed, Prof = ctx.Log, ctx.Elements, ctx.Defaults, ctx.Groups, ctx.Ed, ctx.Prof
     KEY, Parts, ListPanel, Panels, Layout = ctx.KEY, ctx.Parts, ctx.ListPanel, ctx.Panels, ctx.Layout
     Engine, World, MayTry, Failed, Editor = ctx.Engine, ctx.World, ctx.MayTry, ctx.Failed, ctx.Editor
@@ -38,7 +40,7 @@ end
 local function EditKeys()
     return { { { "PgUp", "PgDn" }, "Select" }, { { "←", "→", "↑", "↓" }, "Move" }, { { "+", "-" }, "Size" },
         { { ",", "." }, "Opacity" }, { { "Home", "End" }, "Step" }, { { "Del", "Ins" }, "Hide, show" },
-        { { "Backspace" }, "Reset" }, { { KEY.editor }, "Save, close" } }
+        { { "Backspace" }, "Reset" }, { { "G" }, "Grid" }, { { KEY.editor }, "Save, close" } }
 end
 -- The parts that failed, for a line on every panel: a part whose step or scan threw (Parts), or that gave
 -- up building (Fails, see MayTry; a part with several builds says so itself with Problem).
@@ -63,6 +65,7 @@ local function EditView()
     elseif #E.Instances == 0 then v.Hint = "Not on the screen right now. It still moves." end
     local x, y, w, h = ScreenBox(E)
     v.Mark = { X = x, Y = y, W = w, H = h, Name = E.Name, XY = "X " .. sx .. "   Y " .. sy, Sample = E.Visible and E.Sample or nil }
+    if Ed.Grid and Grid then v.Grid = { W = Hud.VW, H = Hud.VH, Cell = Grid.CELL * Hud.S } end
     -- the screen map: every element with a place, in 1920 x 1080 units
     for i, El in ipairs(Elements) do
         if not IsSwitch(El) and #v.Map < Editor.BOXES then
@@ -122,7 +125,7 @@ function M.Update(now)
     if not open and not Editor.Shown then return end   -- closed, and nothing of the panel on screen to take away
     if open and not Editor.Ready() and MayTry(Editor) and os.clock() > World.SettleUntil and World.Name ~= "" then
         local ok, err = Editor.Build({ Log = Log, Gen = Engine.Round, Font = Engine.FindPoppins(), FontMedium = Engine.FindPoppinsMedium(), Asset = Engine.Asset,
-            ProfileKey = KEY.profile })
+            ProfileKey = KEY.profile, Grid = Grid })
         if ok then Log("panel ready") Editor.Fails, Panel.State = 0, "" else Failed(Editor) Log("panel failed: " .. tostring(err)) end
     end
     if not Editor.Ready() then return end
@@ -136,7 +139,7 @@ function M.Update(now)
         if P then
             state = P.State() .. "|" .. Hud.VW .. "|" .. Hud.VH .. "|" .. (Problems() or "")
         else
-            local parts = { "edit", Ed.Selected, Ed.Step, Prof.N, Hud.VW, Hud.VH, Hud.S, Problems() or "" }
+            local parts = { "edit", Ed.Selected, Ed.Step, Prof.N, Hud.VW, Hud.VH, Hud.S, Problems() or "", Ed.Grid and "grid" or "" }
             for _, El in ipairs(Elements) do
                 parts[#parts + 1] = string.format("%.1f,%.1f,%.2f,%.1f,%s,%d", El.X, El.Y, El.Scale, El.Opacity,
                     El.Visible and "1" or "0", #El.Instances)

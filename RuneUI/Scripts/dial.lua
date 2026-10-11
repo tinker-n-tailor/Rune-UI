@@ -1,6 +1,6 @@
 -- The game's day and night dial as an icon of the mod: half a sun rising at dawn, the sun by day, half a sun setting at
 -- dusk, the moon at night (tools/make-runemap-art.js). It sits in the dial's own widget, so the F9 row "Day and night
--- dial" moves, sizes and fades it. The game's two images (the ring and the pointer) stay alive but unseen: runemap.lua
+-- dial" moves, sizes and fades it. The game's two images (the ring and the pointer) stay alive but unseen: maplook.lua
 -- reads the time from the ring's material. The Rune Skin row "Day and night icon" turns it off and gives them back.
 -- main.lua loads this file with pcall, so an error here leaves the rest of the mod running.
 

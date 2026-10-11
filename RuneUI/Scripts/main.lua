@@ -1,7 +1,7 @@
 -- Rune UI: move, resize and hide parts of the Dragonwilds HUD, with a new minimap, survival rings and bars.
 -- F9 opens the layout editor, F5 Rune Skin, F8 Rune Map, F6 the immersive mode. A timer applies the layout; gold corners mark the selected element.
 
-local VERSION = "1.11"
+local VERSION = "1.12"
 
 local function Log(msg) print("[RuneUI] " .. msg .. "\n") end
 Log("starting " .. VERSION .. " on " .. tostring(_VERSION))
@@ -106,8 +106,9 @@ Beds.Init({ Log = Log, Finder = Finder })
 -- the start (false, never nil, as with E.Moved), so a write there never grows the table while the step reads it.
 -- Edit: F9 is open. Map: F8 is open. Selected: the element picked, an index of Elements. Step: how far an arrow moves
 -- it. Save: a row of the layout changed in a panel or the Mod Menu, and the step saves the layout.
+-- Grid: the grid of F9 is on; it comes on each time F9 opens, and G switches it (grid.lua).
 -- The layout is written into the widgets in apply.lua; the step gives it Edit, Map and Selected as plain values.
-local Ed = { Edit = false, Map = false, Selected = 1, Step = 10, Save = false }
+local Ed = { Edit = false, Map = false, Selected = 1, Step = 10, Save = false, Grid = true }
 local Apply = Need("apply")
 Apply.Init({ Elements = Elements, Layout = Layout, Log = Log })
 
@@ -135,13 +136,14 @@ Keys.Init({ Log = Log, Ed = Ed, Elements = Elements, Defaults = Defaults, Prof =
 -- the F9 and F8 panel, drawn by editor.lua; the step fills it (overlay.lua)
 Overlay.Init({ Log = Log, Elements = Elements, Defaults = Defaults, Groups = Groups, Ed = Ed, Prof = Prof, KEY = Keys.KEY,
     Parts = Parts, ListPanel = ListPanel, Panels = Panels, Layout = Layout, Engine = Engine, World = World,
-    MayTry = MayTry, Failed = Failed, Editor = LoadPart("editor") })
+    MayTry = MayTry, Failed = Failed, Editor = LoadPart("editor"), Grid = LoadPart("grid") })
 World.Init({ Log = Log, Elements = Elements, Finder = Finder, Apply = Apply, Parts = Parts, Engine = Engine, Beds = Beds,
     Overlay = Overlay })
 
 -- The perf lines in UE4SS.log, every 60 s, are made in perf.lua. Perf is its counter: the step adds its times to it.
 local Perf = Need("perf")
-Perf.Init({ Log = Log, ById = ById, Elements = Elements, RuneMap = RuneMap, Finder = Finder, Actors = Beds.Actors })
+Perf.Init({ Log = Log, ById = ById, Elements = Elements, RuneMap = RuneMap, Finder = Finder, Actors = Beds.Actors,
+    Census = LoadPart("census") })
 if Wired.Util.Chain then Wired.Util.Chain.Add = Perf.Add end   -- the chains count their calls by part too
 
 Step.Init({ Log = Log, Parts = Parts, Ed = Ed, Prof = Prof, World = World, Finder = Finder, Apply = Apply, Perf = Perf,
