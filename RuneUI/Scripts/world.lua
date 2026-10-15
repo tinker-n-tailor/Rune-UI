@@ -6,11 +6,11 @@
 local M = {}
 
 -- From main.lua (Init): the log, the element list, the widget search (finder.lua), the layout writer (apply.lua),
--- the list of parts, the names of our widgets (engine.lua), the bed watch (beds.lua) and the panel (overlay.lua).
-local Log, Elements, Finder, Apply, Parts, Engine, Beds, Overlay
+-- the list of parts, the names of our widgets (engine.lua) and the panel (overlay.lua).
+local Log, Elements, Finder, Apply, Parts, Engine, Overlay
 function M.Init(ctx)
     Log, Elements, Finder, Apply, Parts = ctx.Log, ctx.Elements, ctx.Finder, ctx.Apply, ctx.Parts
-    Engine, Beds, Overlay = ctx.Engine, ctx.Beds, ctx.Overlay
+    Engine, Overlay = ctx.Engine, ctx.Overlay
 end
 
 M.Name = nil         -- the local player controller's name; "" while a world is loading
@@ -40,7 +40,6 @@ function M.Forget(sameWorld)
         pcall(P.M.Forget, sameWorld)
         if not sameWorld then P.Error, P.M.ErrorLogged = nil, false end   -- a new world: say it again if it fails again
     end
-    if not sameWorld then Beds.Forget() end   -- one look by path per class in the new world
     Engine.NextRound()
     M.SettleUntil = os.clock() + 3
     Log(sameWorld and "player restart: old handles dropped" or "new world: old handles dropped")

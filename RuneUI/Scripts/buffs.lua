@@ -127,16 +127,16 @@ end
 -- late: while there is none, the face is unseen. Pic is written last: a set that fails is tried again.
 local function ShadeBuff(d)
     d.Name = BuffName(d)
-    local tex, ours = BuffTime.Picture(d.Name, d.W, CachedTex, Log), true
-    if not tex then tex, ours = d.Icon.Brush.ResourceObject, false end
+    local tex, edge = BuffTime.Picture(d.Name, d.W, CachedTex, Log)
+    if not tex then tex = d.Icon.Brush.ResourceObject end
     if not (tex and tex:IsValid()) then
         if d.Pic then d.Pic = nil d.Face:SetRenderOpacity(0.0) end
         return
     end
-    local pic = ours and d.Name or tex:GetFName():ToString()
+    local pic = edge and d.Name or tex:GetFName():ToString()
     if pic == d.Pic then return end
     d.Face:SetRenderOpacity(0.0)   -- a set that fails must not leave the last buff's picture in this entry
-    BuffTime.SetPicture(d, tex, ours)
+    BuffTime.SetPicture(d, tex, edge)
     d.Face:SetRenderOpacity(d.Closed and 0.0 or 1.0)   -- PlaceBuff decides while the entry is closed
     d.Pic = pic
     if not BuffPics[pic] then BuffPics[pic] = true Log("buff icon: " .. pic) end

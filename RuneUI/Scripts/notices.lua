@@ -25,7 +25,6 @@ local SHOW = {
     upkeep  = { { Item = "WBP_PlayerUpkeepNotification_Item_C" } },
     tips    = { { Item = "WBP_TutorialNotifications_Item_C", Hide = { "InputEntryWidget" },
                   Texts = { TitleTextBlock = "Tutorial tip", BodyTextBlock = "A tip of the game shows here." } } },
-    itembrk = { { Item = "WBP_Notification_ItemBreak_Item_C", Texts = { BrokenTextBlock = "Bronze Pickaxe broke!" } } },
     quests  = { { Item = "WBP_QuestAndUnlocks_Item_C" } },
     status  = { { Item = "WBP_EnvAndPlayerStatus_Item_C", Colour = true } },
     pickups = { { Item = "WBP_ItemPickups_Item_C", Home = true, Texts = { ItemText = "Bronze Pickaxe", ItemCountText = "x1" } } },
@@ -37,7 +36,7 @@ local SHOW = {
 }
 -- the group row: all queues at once, built from the single rows
 SHOW.notify = {}
-for _, id in ipairs({ "upkeep", "tips", "itembrk", "quests", "levelup", "status", "pickups" }) do
+for _, id in ipairs({ "upkeep", "tips", "quests", "levelup", "status", "pickups" }) do
     for _, shot in ipairs(SHOW[id]) do SHOW.notify[#SHOW.notify + 1] = shot end
 end
 

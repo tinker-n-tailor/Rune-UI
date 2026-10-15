@@ -14,10 +14,10 @@ function M.Init(ctx)
     Elements, ById, Hud, Log = ctx.Elements, ctx.ById, ctx.Hud, ctx.Log
 end
 -- The parts that FindAll reads. main.lua loads them after this file, before the timer starts.
-local Buffs, Survival, Avatar, RuneMap, Cooldowns, QuestTracker, Party
+local Buffs, Survival, Avatar, RuneMap, Cooldowns, Party
 function M.Attach(P)
     Buffs, Survival = P.Buffs, P.Survival
-    Avatar, RuneMap, Cooldowns, QuestTracker, Party = P.Avatar, P.RuneMap, P.Cooldowns, P.QuestTracker, P.Party
+    Avatar, RuneMap, Cooldowns, Party = P.Avatar, P.RuneMap, P.Cooldowns, P.Party
 end
 
 local function ClassName(obj)
@@ -238,7 +238,7 @@ local function FindAll(buffsNew)
         searched = true
     end
     -- the parts that draw an element of their own: the element is the box they built
-    local drawn = { avatar = Avatar, map = RuneMap, cooldowns = Cooldowns, questtracker = QuestTracker, party = Party }
+    local drawn = { avatar = Avatar, map = RuneMap, cooldowns = Cooldowns, party = Party }
     for _, E in ipairs(Elements) do
         if E.Custom then
             E.Instances, E.Keys = {}, {}

@@ -1,5 +1,6 @@
 -- The widgets that the mod makes itself on the wheels: the durability of an item as a thin half ring inside its
--- slot of the R wheel, and sparks around the middle ring of R and H as Q has them. wheels.lua calls this file.
+-- slot of the R wheel, sparks around the middle ring of R and H as Q has them, and the key numbers of Q as badges
+-- on its rings. wheels.lua calls this file.
 -- main.lua loads it with pcall. How it works is in tools/notes/wheels-meters.md.
 
 local M = {}
@@ -13,6 +14,18 @@ local SIZE, CX, CY = 76, 70, 89        -- units: the meter's pictures, and the m
 local LOW = 0.25                       -- under this share the meter is red
 local GOLD = { R = 0.767, G = 0.479, B = 0.102, A = 1 }   -- #e3b85a, as linear light
 local RED = { R = 0.693, G = 0.040, B = 0.022, A = 1 }    -- the red of the menu buttons' warning
+-- The key numbers of Q: a badge with the slot's number on top of each of the first eight rings, where the game had
+-- its key box. The badge is the game's level badge drawn in a dirty white (the owner's pick in the sketch of
+-- 14-10-2026). At: the middle of each badge, in units from the middle of the wheel. The owner placed them by eye on a
+-- screenshot of the game (14-10-2026), near the edge of each ring on the line from the middle of the wheel (245
+-- units out): exact places on that line looked crooked on the slanted rings. Size: the badge picture in units. Text:
+-- the number's font size. Ink: the number's dark brown, #2b241d as linear light. Right: units that move each number
+-- right inside its badge, so it looks centred; the owner set them by eye (14-10-2026), as the engine centres the
+-- digit's box and not its ink.
+local KEYS = { Size = 34, Text = 10, Pic = "wheel_key.png", Ink = { R = 0.0242, G = 0.0176, B = 0.0123, A = 1 },
+    Right = { 0.6, 0.7, 0.7, 0.2, 0.7, 0.7, 0.2, 0.7 },
+    At = { { X = 2, Y = -244 }, { X = 127, Y = -207 }, { X = 213, Y = -124 }, { X = 247, Y = 3 },
+        { X = 214, Y = 125 }, { X = 129, Y = 215 }, { X = 2, Y = 249 }, { X = -131, Y = 207 } } }
 
 local Ok, Kid, Same, Hold, Mine, Out, New, Add, Image, MakeSparks, SparkTry   -- wheelparts.lua's, given by wheels.lua before the first call
 local Say   -- wheels.lua's log line that is said once for a world: function(key, message)
@@ -140,6 +153,58 @@ function M.Sparks(ctx, w, now)
     w.Sparks, w.SparksAt = MakeSparks(ctx, centre:GetOuter(), centre:GetParent(), k, SHOWN, "RU_WheelSparks"), false
 end
 
+-- The eight number badges of Q, made once for the wheel. They go into the panel that holds the game's key boxes, so
+-- they draw where those did, over the rings; a panel that is no overlay gives the overlay of the middle ring instead.
+local function Numbers(ctx, w)
+    local box = Kid(w.W, "QuickCastInputPrompt0")
+    local holder = box and box:GetParent()
+    local host = Ok(holder) and holder:GetParent()
+    if not (Ok(host) and host:GetClass():GetFName():ToString() == "Overlay") then
+        local centre = w.Part.CenterBg
+        host = Ok(centre) and centre:GetParent()
+    end
+    if not Ok(host) then error("no panel for the key numbers") end
+    local tree, out = host:GetOuter(), {}
+    w.KeyTex = w.KeyTex or {}
+    for i = 0, #KEYS.At - 1 do
+        local ov = New(ctx, "Overlay", tree, "RU_WheelKey")
+        Add(ov, Image(ctx, tree, "RU_WheelKeyBack", KEYS.Pic, KEYS.Size, w.KeyTex), 2, 2)
+        local T = New(ctx, "TextBlock", tree, "RU_WheelKeyText")
+        T:SetText(FText(tostring(i + 1)))
+        T:SetColorAndOpacity({ SpecifiedColor = KEYS.Ink, ColorUseRule = 0 })
+        T:SetJustification(1)
+        T:SetRenderTranslation({ X = KEYS.Right[i + 1], Y = 0 })
+        local fi = T.Font
+        local font = ctx.Font()
+        if font then fi.FontObject = font end
+        fi.Size = KEYS.Text
+        T:SetFont(fi)
+        Add(ov, T, 2, 2)
+        Add(host, ov, 2, 2)
+        ov:SetRenderTranslation(KEYS.At[i + 1])
+        ov:SetVisibility(COLLAPSED)
+        out[#out + 1] = Hold(ov)
+    end
+    return out
+end
+
+-- While Q is open: the number badges, made at the first look. On a gamepad the keys 1 to 8 are no buttons, so they
+-- go. Written only when that changes. A build that fails is not tried again in this world.
+function M.Keys(ctx, w)
+    if w.Numbers == nil then
+        w.Numbers = false
+        local ok, made = pcall(Numbers, ctx, w)
+        if ok then w.Numbers = made else Say("keys", "Q: no key numbers: " .. tostring(made)) end
+    end
+    if not w.Numbers then return end
+    local show = not (ctx.Pad and ctx.Pad())
+    if show == w.NumbersShown then return end
+    w.NumbersShown = show
+    for _, N in ipairs(w.Numbers) do
+        if Mine(N) then N.W:SetVisibility(show and UNTOUCHABLE or COLLAPSED) end
+    end
+end
+
 -- Everything of ours on one wheel that still lives. remove false: out of sight, as the row is off; the game's bar
 -- gets its opacity back from the journal, so it is taken again on the next look. remove true: out of the game's
 -- widgets for good, as the wheel's handles are dropped and ours would be made a second time.
@@ -151,6 +216,9 @@ function M.Hide(w, remove)
         end
     end
     for _, N in ipairs(w.Sparks or {}) do Out(N, remove) end
+    for _, N in ipairs(w.Numbers or {}) do Out(N, remove) end
+    w.NumbersShown = nil
+    if remove then w.Numbers = nil end
 end
 
 return M

@@ -7,11 +7,11 @@ local M = {}
 -- From main.lua (Init): the log, the list of parts, the editor's state (Ed), the profile in use, the world watch, the
 -- widget search (finder.lua) and the layout writer (apply.lua), the perf counter (perf.lua), the layout's saving
 -- (profiles.lua), the F9 panel (overlay.lua), the held arrow (keys.lua), and the parts that the step reads itself.
-local Log, Parts, Ed, Prof, World, Finder, Reports, Apply, Perf, Profiles, Overlay, Keys, Beds
+local Log, Parts, Ed, Prof, World, Finder, Reports, Apply, Perf, Profiles, Overlay, Keys
 local Buffs, Camera, Skin
 function M.Init(ctx)
     Log, Parts, Ed, Prof, World = ctx.Log, ctx.Parts, ctx.Ed, ctx.Prof, ctx.World
-    Finder, Apply, Perf, Profiles, Overlay, Keys, Beds = ctx.Finder, ctx.Apply, ctx.Perf, ctx.Profiles, ctx.Overlay, ctx.Keys, ctx.Beds
+    Finder, Apply, Perf, Profiles, Overlay, Keys = ctx.Finder, ctx.Apply, ctx.Perf, ctx.Profiles, ctx.Overlay, ctx.Keys
     Reports = Finder.Reports
     Buffs, Camera, Skin = ctx.Buffs, ctx.Camera, ctx.Skin
 end
@@ -149,7 +149,6 @@ function M.Start()
                 Log("widgets: this UE4SS gives no reports of new widgets; Rune UI did not start. Install the latest UE4SS experimental build")
                 return
             end
-            Beds.Watch()
             collectgarbage("stop")   -- from here the step collects (Collect)
             LoopInGameThreadWithDelay(50, TimerStep)
             Log("timer: on the game thread")

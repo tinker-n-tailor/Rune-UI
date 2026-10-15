@@ -7,7 +7,7 @@
 -- the meaning of Center, Size, A, Full, Inside and Follows are in layout.lua. Positions are in HUD units, as on a
 -- 16:9 screen (1920x1080 units at any resolution).
 -- Center, Size: measured 27-09-2026 from screenshots and slots. A: from the slots (probe of 29-09-2026).
--- Custom: an element the mod draws itself ("avatar", "map", "cooldowns", "questtracker", "party") or a plain switch (IsSwitch).
+-- Custom: an element the mod draws itself ("avatar", "map", "cooldowns", "party") or a plain switch (IsSwitch).
 -- A switch has no row in F9: the Rune Skin panel (skinpanel.lua), F8 (creatures) or F6 (immersive) shows it.
 -- PathEnds/UseParent: for shared classes, keep only widgets whose path matches, then climb N parents.
 -- Child: move only this named child of the widget's root, not the whole widget.
@@ -52,6 +52,9 @@ local Elements = {
     -- no widget of its own either: showing it shows the game's icons beside the bars (hidden at first)
     { Id="baricons", Name="Game icons beside the bars",     Custom="baricons",
       A={0,0}, Center={X=110, Y=60}, Size={X=30, Y=70} },
+    -- no widget of its own either: showing it shows the game's numbers on the health bar (unseen at first)
+    { Id="barnumbers", Name="Health numbers",               Custom="barnumbers",
+      A={0,0}, Center={X=290, Y=45}, Size={X=80, Y=20} },
     -- no widget of its own either: shown, the HUD fades when nothing happens (immersive.lua; off at first). The F6
     -- panel switches it and sets its Wait.
     { Id="immersive", Name="Immersive mode",                 Custom="immersive",
@@ -92,8 +95,10 @@ local Elements = {
     -- hidden, the game's wheels are back. On at first.
     { Id="wheels",   Name="Wheels",                         Custom="wheels",
       A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
-    { Id="xpfloat", Name="XP numbers",                    Classes={"WBP_FloatingExperienceContainer_C"},
-      Inside="notify", A={0.5,0}, Center={X=860, Y=551}, Size={X=110, Y=40} },
+    -- no widget of its own: shown, the game's XP floats over a hit enemy (game 1.0.1); hidden, it does not (xpfloat.lua).
+    -- Off at first: the XP under the bars shows it.
+    { Id="floatxp",  Name="Floating XP",                    Custom="floatxp",
+      A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
     -- Idle: its render opacity when no notice shows, 0 (README, the slim level up). The slim row reads any opacity above 0.02 as a notice.
     { Id="levelup",  Name="Level up notice",                      Classes={"WBP_LevelUpNotification_C"}, Idle=0,
       Inside="notify", A={0.5,0.5}, Center={X=960, Y=300}, Size={X=500, Y=150} },
@@ -136,8 +141,6 @@ local Elements = {
       A={0.5,0.5}, Center={X=960, Y=640}, Size={X=300, Y=60} },
     { Id="armor",    Name="Armor damage warning",                 Classes={"WBP_ArmourDurabilityDisplay_C"},
       A={0,0}, Center={X=960, Y=540}, Size={X=200, Y=60} },
-    { Id="itembrk",  Name="Broken item warning",            Classes={"WBP_Notification_ItemBreak_C"},
-      Inside="notify", A={0.5,0.5}, Center={X=960, Y=580}, Size={X=100, Y=30} },
     -- The notice for where you are and how you are (Cosy at home, Sheltered): in the game's notice box it is tied to the
     -- middle of the screen, 135 units up (the game's widget tree, 05-10-2026). Its band is 775 by 57 units in the game's files.
     { Id="status",   Name="Status notices (cosy, sheltered)", Classes={"WBP_EnvAndPlayerStatus_C"},
@@ -159,13 +162,10 @@ local Elements = {
     -- first).
     { Id="cdhoriz",  Name="Spell cooldowns in a row",      Custom="cdhoriz",
       A={0,0.5}, Center={X=70, Y=540}, Size={X=40, Y=40} },
-    -- our own text under the minimap, at the top right (questtracker.lua): the main quest and the tracked one. Size:
-    -- its box. Centre: its right edge on the minimap's right edge (1904), its top 12 units under the minimap's box.
-    { Id="questtracker", Name="Quest tracker",              Custom="questtracker",
-      A={1,0}, Center={X=1754, Y=307}, Size={X=300, Y=110} },
-    -- no widget of its own: shown, the tracker also lists the next steps of a quest with a clean list (off at first)
-    { Id="questnext", Name="Next quest steps",              Custom="questnext",
-      A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
+    -- the game's own quest tracker since 1.0.1, in our look (questlook.lua). Its list (QuestContainer, 406 x 96 units, its
+    -- top right corner at 1855, 130 in its full-screen canvas, seen 14-10-2026) moves, not the whole widget.
+    { Id="questlist", Name="Quest tracker",                 Classes={"WBP_HUD_QuestList_C"},
+      Child="QuestContainer", A={1,0}, Center={X=1652, Y=178}, Size={X=406, Y=96} },
     -- our own rows for the other players of a co-op world, top left under the bars (party.lua): the name and a health
     -- bar for each. Size: its box of five rows. Centre: its left edge at 42 units, its top at 146, under the bars and
     -- clear of the row of Rune XP (a level up grows that row to about 145).
@@ -202,23 +202,26 @@ local Defaults = {
     area={Y=40, Scale=0.85},
     saving={X=130, Y=750, Scale=0.8},
     ammo={X=250, Y=420},   -- right of the food and water rings, above the tool bar
-    prompts={X=0, Y=-10}, armor={X=0, Y=-10}, itembrk={X=0, Y=-10}, status={X=0, Y=-20}, menuico={X=0, Y=-40},
+    prompts={X=0, Y=-10}, armor={X=0, Y=-10}, status={X=0, Y=-20}, menuico={X=0, Y=-40},
     -- the same Y as "notify"
     banners={Y=-20}, upkeep={Y=-20}, tips={Y=-20},
-    baricons={Visible=false}, immersive={Visible=false, Wait=8},
+    baricons={Visible=false}, barnumbers={Visible=false}, immersive={Visible=false, Wait=8},
+    floatxp={Visible=false},
     -- 140 under the middle, clear of the party panel; a saved layout keeps its own place
     cooldowns={Y=140},
-    questnext={Visible=false}, cdhoriz={Visible=false},
+    cdhoriz={Visible=false},
+    -- under RuneMap: its right edge on the map ring's right edge (1904), its top 12 units under the map (252)
+    questlist={X=49, Y=122},
 }
 
 -- The F9 list: the rows by what the part is, in this order. Every element with a place on the screen is in one group.
 local Groups = {
-    { Name = "Bars and status", Ids = { "vitals", "avatar", "weapon", "region", "survival", "drink", "buffs", "ammo", "xp", "xpfloat" } },
+    { Name = "Bars and status", Ids = { "vitals", "avatar", "weapon", "region", "survival", "drink", "buffs", "ammo", "xp" } },
     { Name = "Combat", Ids = { "toolbar", "cooldowns", "legend", "wheel" } },
     { Name = "Map and time", Ids = { "runemap", "compass", "daynight" } },
-    { Name = "Quests and friends", Ids = { "questtracker", "party" } },
+    { Name = "Quests and friends", Ids = { "questlist", "party" } },
     { Name = "Notices", Ids = { "notify", "levelup", "area", "banners", "quests", "pickups", "tips", "status", "upkeep", "armor",
-        "itembrk", "banner", "saving", "death" } },
+        "banner", "saving", "death" } },
     { Name = "Menus and prompts", Ids = { "menuico", "menubtn", "prompts" } },
 }
 

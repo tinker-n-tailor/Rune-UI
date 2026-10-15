@@ -32,9 +32,10 @@ function M.Add(H)
         end
         -- the immersive mode and the creatures are rows of the layout: the step's save writes them (Ed.Save)
         local I, C = ById("immersive"), ById("creatures")
-        for _, r in ipairs({ { "immersive", "immersive" }, { "rune_xp", "runexp" }, { "slim_level_up", "slimlevel" },
-            { "combat_text", "combattext" }, { "quest_next", "questnext" }, { "horizontal_cooldowns", "cdhoriz" },
-            { "party_panel", "party" }, { "wheels", "wheels" }, { "gold_crosshair", "aim" }, { "day_night_icon", "dialskin" }, { "bar_icons", "baricons" } }) do
+        for _, r in ipairs({ { "immersive", "immersive" }, { "rune_xp", "runexp" }, { "floating_xp", "floatxp" }, { "slim_level_up", "slimlevel" },
+            { "combat_text", "combattext" }, { "horizontal_cooldowns", "cdhoriz" },
+            { "party_panel", "party" }, { "wheels", "wheels" }, { "gold_crosshair", "aim" }, { "day_night_icon", "dialskin" }, { "bar_icons", "baricons" },
+            { "health_numbers", "barnumbers" } }) do
             local El = ById(r[2])
             Row(r[1], function() return El.Visible end, function(v) El.Visible = v == true Ed.Save = true end)
         end

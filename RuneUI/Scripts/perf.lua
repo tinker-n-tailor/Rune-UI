@@ -5,9 +5,8 @@
 
 -- From main.lua (Init): the log, layout.lua's ById, the element list, the map (runemap.lua, nil when it did not load)
 -- and the widget search (finder.lua), whose counters the third line reads and sets back. Reports: the finder's table.
--- Actors: main.lua's count of the game's reports of new actors (the bed names), read and set back here too.
 -- Census: census.lua, which counts what the Lua state holds after the full collection.
-local Log, ById, Elements, RuneMap, Finder, Reports, Actors, Census
+local Log, ById, Elements, RuneMap, Finder, Reports, Census
 
 -- What the mod costs the game, logged every 60 s
 local Perf = { From = os.clock(), Ticks = 0, Sum = 0, Max = 0, Watch = 0, Long = 0, Scans = 0, ScanSum = 0, ScanMax = 0 }
@@ -114,8 +113,8 @@ local function PerfLog(now)
     table.sort(why)
     Log(string.format("perf: %d full searches, avg %.0f ms, max %.0f ms (%s); %s", Finder.Searches.N,
         Finder.Searches.Sum / math.max(1, Finder.Searches.N) * 1000, Finder.Searches.Max * 1000, table.concat(why, ", "),
-        string.format("%d new widgets reported in %.0f ms, max %.0f ms, %d kept; %d actors reported in %.0f ms", Reports.Seen,
-            Reports.Time * 1000, Reports.Max * 1000, Reports.Kept, Actors.N, Actors.Time * 1000)))
+        string.format("%d new widgets reported in %.0f ms, max %.0f ms, %d kept", Reports.Seen,
+            Reports.Time * 1000, Reports.Max * 1000, Reports.Kept)))
     -- the kept lists, as FindClass reads a whole list when the parts are matched again: their size and the longest
     local n, top, topN = 0, "none", 0
     for c in pairs(Reports.Wanted) do
@@ -141,7 +140,6 @@ local function PerfLog(now)
     end
     Finder.Searches = { N = 0, Sum = 0, Max = 0, Why = {} }
     Reports.Seen, Reports.Kept, Reports.Time, Reports.Max, Reports.Quick = 0, 0, 0, 0, 0
-    Actors.N, Actors.Time = 0, 0
     -- in place: main.lua's step writes into this same table
     P.From, P.Ticks, P.Sum, P.Max, P.Watch, P.Long, P.Scans, P.ScanSum, P.ScanMax = now, 0, 0, 0, 0, 0, 0, 0, 0
     Fps.By = {}
@@ -149,7 +147,7 @@ end
 
 function Perf.Init(ctx)
     Log, ById, Elements, RuneMap, Finder = ctx.Log, ctx.ById, ctx.Elements, ctx.RuneMap, ctx.Finder
-    Reports, Actors, Census = Finder.Reports, ctx.Actors or { N = 0, Time = 0 }, ctx.Census
+    Reports, Census = Finder.Reports, ctx.Census
 end
 Perf.CountFrames, Perf.Write = CountFrames, PerfLog
 return Perf

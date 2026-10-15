@@ -171,10 +171,15 @@ local function AddShield(ctx, owner, file, comp)
     if not Alive(cls) then return nil end
     local tex = Picture(ctx, file)
     if not tex then return nil end
-    local icon = owner:AddComponentByClass(cls, false, AT, false)
+    -- Made deferred: the map places an icon above or below its fog when the icon registers, and a change after that is not
+    -- seen. Since game 1.0.1 a shield below the fog was unseen in fog (the circles of the game sit above it, 14-10-2026),
+    -- so the shield takes its circle's fog setting first.
+    local icon = owner:AddComponentByClass(cls, false, AT, true)
     if not Alive(icon) then return nil end
     -- an icon that cannot be set up comes off again: the next step makes a new one, and none is left behind
     local set = pcall(function()
+        pcall(function() icon.IconFogInteraction = comp.IconFogInteraction end)
+        owner:FinishAddComponent(icon, false, AT)
         icon:SetIconTexture(tex)
         local at = comp:K2_GetComponentLocation()
         icon:K2_SetWorldLocation({ X = at.X, Y = at.Y, Z = at.Z }, false, HIT, false)

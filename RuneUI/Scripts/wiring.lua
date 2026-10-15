@@ -8,10 +8,10 @@ local M = {}
 -- H is what main.lua gives: the loading and the list of parts (LoadPart, AddPart), the log, the element list and its
 -- starting layout, layout.lua's ById, the settings file (Settings, Cfg, SaveCfg), the names of the bound keys (Key), the editor's state (Ed), the helpers of
 -- engine.lua, the retry rule (MayTry, Failed), the widget search (Finder), the layout writer (Apply), the F8 and F5
--- panels (MapPanel), the world watch (World), the bed watch (Beds) and the step (Step).
+-- panels (MapPanel), the world watch (World) and the step (Step).
 function M.Build(H)
     local LoadPart, AddPart, Log, Elements, ById, Defaults, Ed = H.LoadPart, H.AddPart, H.Log, H.Elements, H.ById, H.Defaults, H.Ed
-    local Settings, Cfg, SaveCfg, MapPanel, Apply, Finder, World, Beds, Step = H.Settings, H.Cfg, H.SaveCfg, H.MapPanel, H.Apply, H.Finder, H.World, H.Beds, H.Step
+    local Settings, Cfg, SaveCfg, MapPanel, Apply, Finder, World, Step = H.Settings, H.Cfg, H.SaveCfg, H.MapPanel, H.Apply, H.Finder, H.World, H.Step
     local Engine, MayTry, Failed = H.Engine, H.MayTry, H.Failed
     local Uniq, G, ClearOurs, Asset, SetColor, MakeText, CachedTex = Engine.Uniq, Engine.G, Engine.ClearOurs, Engine.Asset, Engine.SetColor, Engine.MakeText, Engine.CachedTex
     local FindPoppins, FindPoppinsMedium = Engine.FindPoppins, Engine.FindPoppinsMedium
@@ -28,7 +28,7 @@ function M.Build(H)
     local MenuButtons = nil -- the menu buttons in rings, from menubuttons.lua
     local Aim = nil       -- the gold aim marks and lock-on diamond, from aim.lua
     local Cooldowns = nil -- the spell cooldown tiles, from cooldowns.lua
-    local QuestTracker = nil -- the main and tracked quest under the minimap, from questtracker.lua
+    local QuestLook = nil -- the game's quest tracker in our look, from questlook.lua
     local Party = nil     -- the health of the other players, from party.lua
     local Letters = nil   -- white letters with a shadow, from letters.lua
     local Ammo = nil      -- the ammo counter in a ring, from ammo.lua
@@ -115,7 +115,7 @@ function M.Build(H)
         MapStays = function() return RuneMap ~= nil and RuneMap.Set.Immersive == "Map" end,
         CompassStays = function() return RuneMap ~= nil and RuneMap.Set.Immersive == "Compass" end,
         -- the quest and step on show: a change brings the quest tracker back
-        QuestSig = function() return QuestTracker and QuestTracker.Sig end,
+        QuestSig = function() return QuestLook and QuestLook.Sig end,
         -- how many times a friend's health went down: a new one brings the party panel back
         PartyHits = function() return Party and Party.Hits end }
     if Survival then MenuButtons = LoadPart("menubuttons") end   -- it draws with survival.lua's ring
@@ -179,12 +179,18 @@ function M.Build(H)
         if P then AddPart("combat text", P, { Log = Log, Find = FindClass, MayTry = MayTry, Failed = Failed, Chain = Util.Chain,
             Soon = ExecuteInGameThreadWithDelay,
             On = function() return ById("combattext").Visible end }) end
-        AddPart("death look", LoadPart("deathlook"), { Log = Log, Find = FindClass, MayTry = MayTry, Failed = Failed, Combat = P })   -- "You Died": red, bigger, above the band
+        local XpFloat = LoadPart("xpfloat")   -- the game's floating XP, shown or not (the switch "floatxp")
+        if XpFloat then AddPart("floating xp", XpFloat, { Log = Log, Find = FindClass, On = function() return ById("floatxp").Visible end }) end
+        AddPart("death look", LoadPart("deathlook"), { Log = Log, Find = FindClass, Asset = Asset, MayTry = MayTry, Failed = Failed, Combat = P })   -- "You Died": red, bigger, above the band
         P = LoadPart("noticelook")   -- the look of the game's notices; noticestyle.lua holds its writes
         if P then AddPart("notice look", P, { Log = Log, Find = FindClass, Font = FindPoppinsMedium, Uniq = Uniq, CachedTex = CachedTex, Style = LoadPart("noticestyle"), Reads = LoadPart("noticeread"), Hud = ImmersiveCtx.Rings, Survival = Survival, Ring = LoadPart("noticering") }) end
         P = LoadPart("quests") if P then AddPart("quests", P, { Log = Log, Find = FindClass, Font = FindPoppins, Collect = Letters and Letters.Collect, Embers = Embers }) end
+        QuestLook = LoadPart("questlook")
+        if QuestLook then AddPart("quest list", QuestLook, { Log = Log, Find = FindClass, Font = FindPoppins, TitleFont = FindPoppinsMedium,
+            Line = Util.GoldLine and function() return Asset(Util.GoldLine.PATH, "/Script/Engine.Texture2D") end,
+            GoldLine = Util.GoldLine, G = G }) end
         local WP = LoadPart("wheelparts")   -- the writes that can be put back: the wheels
-        P = LoadPart("wheels") if P then AddPart("wheels", P, { Log = Log, Find = FindClass, Font = FindPoppinsMedium, CachedTex = CachedTex, Parts = WP, Spells = LoadPart("wheelspells"), Meters = LoadPart("wheelmeters"), Books = LoadPart("wheelbooks"), G = G, On = function() return ById("wheels").Visible end }) end
+        P = LoadPart("wheels") if P then AddPart("wheels", P, { Log = Log, Find = FindClass, Font = FindPoppinsMedium, CachedTex = CachedTex, Parts = WP, Spells = LoadPart("wheelspells"), Meters = LoadPart("wheelmeters"), Books = LoadPart("wheelbooks"), G = G, Pad = Apply.PadInUse, On = function() return ById("wheels").Visible end }) end
         -- the id of the selected row while F9 is open; nil with the editor closed or F8 open
         local function SelectedId()
             local E = Ed.Edit and not Ed.Map and Elements[Ed.Selected]
@@ -201,27 +207,6 @@ function M.Build(H)
                     HudUp = function() local V = ById("vitals").Instances[1] return V ~= nil and V:IsValid() end })
             end
             AddPart("notices", P, { Log = Log, Find = FindClass, Selected = SelectedId })
-        end
-        QuestTracker = LoadPart("questtracker")
-        if QuestTracker and Util.GoldLine then
-            AddPart("quest tracker", QuestTracker, { Log = Log, ById = ById, Asset = Asset, GoldLine = Util.GoldLine, MayTry = MayTry, Failed = Failed,
-                Text = function(tree, name, size, color, s)
-                    return MakeText(tree, name, size, color, s, FindPoppinsMedium())
-                end,
-                -- F9 only, as the cooldowns: with the map settings (F8) open the made-up sample would show too
-                Editing = function() return Ed.Edit end,
-                On = function() return ById("questtracker").Visible end,
-                ShowNext = function() return ById("questnext").Visible end,
-                -- the game's quest and unlock notice is on show: its entry, made once in a world, is collapsed (1) at rest
-                -- and not collapsed (3) while a notice plays (probe of 04-10-2026)
-                Popup = function()
-                    for _, W in ipairs((FindClass("WBP_QuestAndUnlocks_Item_C"))) do
-                        local ok, shown = pcall(function() return W:GetVisibility() ~= 1 end)
-                        if ok and shown then return true end
-                    end
-                    return false
-                end,
-                Controller = Controller })
         end
         Party = LoadPart("party")
         if Party then
@@ -272,15 +257,16 @@ function M.Build(H)
         end
         P = LoadPart("pointer")   -- the mouse pointer: a gold arrow in place of the Windows arrow
         if P then AddPart("pointer", P, { Log = Log, Controller = Controller, Name = FName }) end
-        P = LoadPart("bednames")
-        if P then AddPart("bed names", P, { Log = Log, Hook = RegisterHook, Text = FText, Find = Beds.Find }) end
         -- the crosshair setting: "immersive mode on" is its row in F6, the switch
         local function ImmersiveOn() return ById("immersive").Visible end
         P = Camera and LoadPart("camera")
+        local CameraPart = P   -- crosshair.lua asks it what the right hand holds
         if P then
             AddPart("camera", P, { Log = Log, Rules = Camera, Controller = Controller,
                 -- the HUD reticle: a bow's aim or a staff's cast starts the ranged zoom (camera.lua Aiming)
                 Reticle = AimCtx.Reticle, Find = Survival and Survival.Find, MayTry = MayTry, Failed = Failed,
+                -- a glide of the camera runs every frame (camera.lua GlideTo); 1 ms is the next frame
+                Loop = LoopInGameThreadWithDelay,
                 -- the game's camera values, kept where a restart of the mods does not lose them (camera.lua Keep)
                 Shared = function(name, v)
                     local ok, r = pcall(function()
@@ -291,14 +277,14 @@ function M.Build(H)
                 end })
         end
         P = Camera and Aim and Aim.Collect and LoadPart("crosshair")
-        if P then AddPart("crosshair", P, { Log = Log, Rules = Camera, Immersive = ImmersiveOn, Reticle = AimCtx.Reticle, Collect = Aim.Collect }) end
+        if P then AddPart("crosshair", P, { Log = Log, Rules = Camera, Immersive = ImmersiveOn, Reticle = AimCtx.Reticle, Collect = Aim.Collect,
+            Hands = CameraPart and CameraPart.Hands, Building = CameraPart and CameraPart.Building }) end
     end
     -- last of the parts that draw: the parts above may change what it fades, and ApplyAll reads its opacity after it
     -- (the Mod Menu part, added at the keys, comes after it and draws nothing)
     AddPart("immersive", Immersive, ImmersiveCtx, true)
     -- the parts that the widget search and the layout's writing read: all loaded by now, and the first step comes with the timer
-    Finder.Attach({ Buffs = Buffs, Survival = Survival, Avatar = Avatar, RuneMap = RuneMap, Cooldowns = Cooldowns,
-        QuestTracker = QuestTracker, Party = Party })
+    Finder.Attach({ Buffs = Buffs, Survival = Survival, Avatar = Avatar, RuneMap = RuneMap, Cooldowns = Cooldowns, Party = Party })
     Apply.Attach({ Immersive = Immersive, Survival = Survival })
     return { Util = Util, Buffs = Buffs, Camera = Camera, RuneMap = RuneMap }
 end

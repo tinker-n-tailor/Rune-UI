@@ -1,5 +1,5 @@
--- The bars: a plain dark track behind each fill, one colour per bar, stamina green, health on top, no health
--- numbers, the game's shadow and icons hidden; and the gold line of the loading screen under the bars. main.lua loads
+-- The bars: a plain dark track behind each fill, one colour per bar, stamina green, health on top, health
+-- numbers only with their switch on, the game's shadow and icons hidden; and the gold line of the loading screen under the bars. main.lua loads
 -- this file with pcall; its Scan runs once per widget scan.
 
 local M = {}
@@ -127,14 +127,14 @@ local function EnsureBlades()
     if not (V and V:IsValid()) then return end
     local host = VE.Keys[1]   -- its full name, read by the search
     if Blades.HostName ~= host then
-        Blades.HostName, Blades.Bars, Blades.Missed, Blades.Count, Blades.Swapped, Blades.NoNumbers = host, {}, {}, 0, nil, nil
+        Blades.HostName, Blades.Bars, Blades.Missed, Blades.Count, Blades.Swapped, Blades.Numbers = host, {}, {}, 0, nil, nil
         OneColor = {}   -- new bars: a fill of theirs may reuse an old name
     end
     local ok, err = pcall(function()
         -- a bar the game made again: forget the dead handle, find the new widget and swap the rows again
         for i = 1, #BARS do
             if Blades.Bars[i] and not Blades.Bars[i]:IsValid() then
-                Blades.Bars[i], Blades.Count, Blades.Swapped, Blades.NoNumbers = nil, Blades.Count - 1, nil, nil
+                Blades.Bars[i], Blades.Count, Blades.Swapped, Blades.Numbers = nil, Blades.Count - 1, nil, nil
             end
         end
         if Blades.Count < #BARS then
@@ -157,13 +157,15 @@ local function EnsureBlades()
         end
         -- each part as soon as its bars are there: a missing special bar must not stop the others
         if Blades.Bars[1] and Blades.Bars[2] then SwapRows() end
-        -- no numbers on the health bar: unseen, not collapsed, so the immersive mode still reads them (seen in the game, 30-09-2026)
-        if Blades.Bars[2] and Survival and not Blades.NoNumbers then
+        -- the numbers on the health bar follow the switch "Health numbers" (off at first): unseen, not collapsed, so the
+        -- immersive mode still reads them (seen in the game, 30-09-2026)
+        local numbers = ById("barnumbers").Visible == true and 1.0 or 0.0
+        if Blades.Bars[2] and Survival and Blades.Numbers ~= numbers then
             local texts = Survival.TextsUnder(Blades.Bars[2])
-            for _, T in ipairs(texts) do pcall(function() T:SetRenderOpacity(0.0) end) end
+            for _, T in ipairs(texts) do pcall(function() T:SetRenderOpacity(numbers) end) end
             if #texts > 0 then   -- none yet: the bar is still being built, try on the next scan
-                Blades.NoNumbers = true
-                Log("bars: health numbers hidden (" .. #texts .. " texts)")
+                Blades.Numbers = numbers
+                Log("bars: health numbers " .. (numbers == 1 and "shown" or "hidden") .. " (" .. #texts .. " texts)")
             end
         end
         if Blades.Bars[1] then

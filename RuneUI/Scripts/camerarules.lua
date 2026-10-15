@@ -1,22 +1,22 @@
 -- The immersive camera: its settings and its rules, and the Immersive mode panel (F6), which also holds the two rows of
 -- the immersive mode itself. Pure Lua, no game calls, so tools/test-camera.js runs it without the game. camera.lua reads
--- the game and writes what Step gives back; crosshair.lua asks HideCrosshair; main.lua draws the panel from View and
+-- the game and writes what Step gives back; crosshair.lua asks CrosshairHides; main.lua draws the panel from View and
 -- saves through Attach.
 -- The camera has its own switch and works with or without the immersive mode. Off, the game's camera.
--- The views: walking close with the character on the left, a sprint far (the game moves the camera in and out of a
--- sprint itself), and a fight's distance held a while after it ends (the game's combat switch drops the moment the
--- enemy dies). The walk distance holds with a tool, empty hands or a weapon out of a fight; a fight changes it, closer
--- with a melee weapon, farther while a ranged weapon aims or casts. A staff is the exception: the game shows the magic
--- reticle all the time a staff is in the hand, so a staff in the hand gives the ranged view (seen in the game, 06-10-2026).
--- Every distance is set at once: the game blends the camera to a new distance of the walking profile by itself, in
--- about 0.5 to 0.7 s (seen in the game, 05-10-2026).
+-- The views: walking close with the character on the left, a sprint far, and a fight's distance held a while after it
+-- ends (the game's combat switch drops the moment the enemy dies). The walk distance holds with a tool, empty hands or a
+-- weapon out of a fight; a fight changes it, closer with a melee weapon, farther while a ranged weapon aims or casts. A
+-- staff is the exception: the game shows the magic reticle all the time a staff is in the hand, so a staff in the hand
+-- gives the ranged view (seen in the game, 06-10-2026). A sprint's view wins over every other but a melee fight.
+-- The camera glides to each new distance (Glide, GlideAt): game 1.0.1 no longer blends its camera profiles, so the
+-- mod moves the camera arm itself (probes of 15-10-2026). 0.6 s is about the game's own blend before 1.0.1.
 local M = {}
 
 -- the camera's rows in the panel, in Mod Menu (camera_<Key>) and in the [camera] section of runeui.txt, in this order.
 -- Distances in the game's units, which are cm.
 M.ROWS = {
     -- "Aim only" was "Hide" in older files: an old file or Mod Menu value reads as "Aim only" (Old)
-    { Key = "crosshair", Label = "Crosshair in immersive mode", Kind = "choice", Options = { "Show", "Aim only" }, Default = "Show",
+    { Key = "crosshair", Label = "Crosshair in immersive mode", Kind = "choice", Options = { "Show", "Aim + tools", "Aim only", "Nothing" }, Default = "Show",
         Old = { hide = "Aim only" } },
     { Key = "on", Label = "Immersive camera", Kind = "switch", Default = false },
     { Key = "walk", Label = "Walk distance", Kind = "number", Min = 100, Max = 1500, Step = 25, Unit = "cm", Default = 300 },
@@ -123,7 +123,7 @@ end
 -- right hand is a melee weapon. A shield or a torch in the left hand changes nothing. Names from the game's files.
 local RANGED_RIGHT = { "BP_Staff_", "BP_Wand_" }
 local RANGED_LEFT = { "BP_Longbow_", "BP_Shortbow_", "BP_Crossbow_" }
-local TOOLS = { "BP_Pickaxe_", "BP_Logging_Axe_", "BP_FishingRodV2_" }
+local TOOLS = { "BP_Pickaxe_", "BP_Logging_Axe_", "BP_FishingRodV2_", "BP_Spade_", "BP_Secateurs_" }
 local function Starts(name, list)
     for _, p in ipairs(list) do if string.sub(name, 1, #p) == p then return true end end
     return false
@@ -156,37 +156,73 @@ local function Fighting(kind, s)
     return false
 end
 
--- A camera's memory: FightUntil the end of a fight's hold and FightView that fight's view. Out is reused every step.
-function M.NewMemory() return { FightUntil = -1, FightView = nil, Out = {} } end
+-- A camera's memory: FightUntil the end of a fight's hold and FightView that fight's view, SprintUntil the end of a
+-- sprint's hold, View the view of the step before. Out is reused every step.
+function M.NewMemory() return { FightUntil = -1, FightView = nil, SprintUntil = -1, View = nil, Out = {} } end
 
 local MIN_DISTANCE, MAX_DISTANCE = BY_KEY.walk.Min, BY_KEY.walk.Max
+-- seconds: a glide; the glide back in after a sprint, slower, as a quick zoom right after a stop feels abrupt; the
+-- sprint view kept after the sprint signal drops, so a short break in a sprint does not pull the camera in and out
+M.GLIDE, M.GLIDE_FROM_SPRINT, M.SPRINT_HOLD = 0.6, 1.2, 0.5
 
--- s: Combat (the combat switch), Aiming (an aim reticle shows), Right, Left (class names).
--- now: seconds. Gives back Active false (the game's camera: every value goes back), or Active with Walk (the walking
--- profile's distance, set at once: the game blends the camera there), Sprint (the sprinting profile's), Side (both
--- profiles' side offset), View ("walk", "melee", "ranged") and Kind (what is in the hands, as Classify).
+-- s: Combat (the combat switch), Aiming (an aim reticle shows), Sprinting (the game's sprint signal), Right, Left (class
+-- names). now: seconds. Gives back Active false (the game's camera: every value goes back), or Active with Distance and
+-- Side (where the camera glides), Glide (the seconds of a glide that starts now), View ("walk", "sprint", "melee",
+-- "ranged") and Kind (what is in the hands, as Classify).
 function M.Step(mem, s, now)
     local set, out = M.Set, mem.Out
     if not set.on then
-        mem.FightUntil, mem.FightView = -1, nil
+        mem.FightUntil, mem.FightView, mem.SprintUntil, mem.View = -1, nil, -1, nil
         out.Active = false
         return out
     end
     local kind = M.Classify(s.Right, s.Left)
     local fight = Fighting(kind, s)
     if fight then mem.FightUntil, mem.FightView = now + set.hold, kind end
+    if s.Sprinting == true then mem.SprintUntil = now + M.SPRINT_HOLD end
     -- a fight's view holds after it ends, also when the weapon goes away or changes in that time
     local view = "walk"
     if fight then view = kind
     elseif now < mem.FightUntil then view = mem.FightView end
+    -- a sprint wins over every view but a melee fight that is on: a staff in the hand counts as an aim all the time,
+    -- so the ranged view would hide every sprint with a staff
+    if now < mem.SprintUntil and not (fight and kind == "melee") then view = "sprint" end
+    out.Glide = (mem.View == "sprint" and view ~= "sprint") and M.GLIDE_FROM_SPRINT or M.GLIDE
+    mem.View = view
     local target = math.max(MIN_DISTANCE, math.min(MAX_DISTANCE, set[view]))
-    out.Active, out.Walk, out.Sprint, out.Side, out.View, out.Kind = true, target, set.sprint, set.side, view, kind
+    out.Active, out.Distance, out.Side, out.View, out.Kind = true, target, set.side, view, kind
     return out
 end
 
--- the crosshair setting: Aim only hides the dot of the game's crosshair while the immersive mode is on, with or without
--- this camera, but not the dot of an aim (crosshair.lua names the marks, and keeps those of AimReticle)
-function M.HideCrosshair(immersive) return M.Set.crosshair == "Aim only" and immersive == true end
+-- A glide of the camera between two places, each a distance and a side: g holds FromA, FromY, ToA, ToY, Start, Secs.
+-- Glide starts a new one from (a, y) when the target changed, and gives back true then; GlideAt gives the place at now
+-- on a smooth curve, and true once it is there.
+function M.Glide(g, toA, toY, secs, now, a, y)
+    if g.ToA == toA and g.ToY == toY then return false end
+    g.FromA, g.FromY, g.ToA, g.ToY, g.Start, g.Secs = a, y, toA, toY, now, secs
+    return true
+end
+function M.GlideAt(g, now)
+    local k = g.Secs > 0 and (now - g.Start) / g.Secs or 1
+    if k >= 1 then return g.ToA, g.ToY, true end
+    if k < 0 then k = 0 end
+    local e = k * k * (3 - 2 * k)
+    return g.FromA + (g.ToA - g.FromA) * e, g.FromY + (g.ToY - g.FromY) * e, false
+end
+
+-- The crosshair setting, while the immersive mode is on, with or without this camera: which dots crosshair.lua hides.
+-- nil: none (Show, or out of the immersive mode). "dots": every dot but the dot of an aim (crosshair.lua keeps those of
+-- AimReticle): Aim only, and Aim + tools while no tool is in a hand (right, left: class names) and the build mode is
+-- off (building), as a tree, a rock or a building piece is aimed at with the dot. "all": every dot, the dot of an aim
+-- too (Nothing). The logging axe was in the left hand in the game (camera log of 14-10-2026).
+function M.HoldsTool(right, left) return Starts(right or "", TOOLS) or Starts(left or "", TOOLS) end
+function M.CrosshairHides(immersive, right, left, building)
+    local c = M.Set.crosshair
+    if immersive ~= true or c == "Show" then return nil end
+    if c == "Nothing" then return "all" end
+    if c == "Aim + tools" and (building == true or M.HoldsTool(right, left)) then return nil end
+    return "dots"
+end
 
 ---------------------------------------------------------------- the panel (F6)
 
@@ -205,7 +241,7 @@ local HINTS = {
     wait = "Seconds with nothing happening before the HUD fades.",
     walk = "How far the camera is when you walk. The game's own camera is at 700 cm.",
     side = "How far right the camera sits, so you stand on the left. 0 is the middle.",
-    sprint = "How far the camera goes out in a sprint. The game brings it back after you stop.",
+    sprint = "How far the camera goes out in a sprint. It comes back in after you stop.",
     melee = "The distance in a fight with a melee weapon.",
     ranged = "The distance while you aim a bow or hold a staff. It holds for a few seconds.",
     hold = "How long the zoom stays after a fight or an aim. Then the camera goes back.",
@@ -221,7 +257,10 @@ function M.Hint(i)
         return "Closer, your character on the left. With or without the immersive mode."
     end
     if r.Key == "crosshair" then
-        if M.Set.crosshair == "Aim only" then return "No crosshair dot, except while you aim a bow or hold a staff." end
+        local c = M.Set.crosshair
+        if c == "Aim + tools" then return "No crosshair dot, except while you aim, build or hold a tool." end
+        if c == "Aim only" then return "No crosshair dot, except while you aim a bow or hold a staff." end
+        if c == "Nothing" then return "No crosshair dot at all in the immersive mode." end
         return "The game's crosshair, as always."
     end
     return HINTS[r.Key]

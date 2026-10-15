@@ -25,7 +25,7 @@ local function Hold(ctx) return ctx.Wait() end
 -- "Menu icons" (menuico) is not in it: that widget is the game's full-screen menu, not the icons in the corner
 -- (widget dump of 29-09-2026)
 local GROUP = { avatar = "bars", weapon = "bars", compass = "compass", wheel = "none", runemap = "none",
-    menubtn = "menu", questtracker = "quest", party = "party" }
+    menubtn = "menu", questlist = "quest", party = "party" }
 
 M.ErrorLogged = false   -- main.lua logs one failed step
 local Level = { bars = 1, menu = 1, quest = 1, party = 1, compass = 1, none = 1 }
@@ -102,7 +102,7 @@ local function Read(ctx, now)
     local chat = ctx.ChatCount()
     if chat and LastChat and chat > LastChat then Until.menu = now + Hold(ctx) end
     LastChat = chat
-    -- the quest tracker: a new step (or quest) brings it back for a moment. The first read only sets the mark.
+    -- the quest list: a new step (or quest) brings it back for a moment. The first read only sets the mark.
     local quest = ctx.QuestSig()
     if quest and LastQuest and quest ~= LastQuest then Until.quest = now + Hold(ctx) end
     LastQuest = quest

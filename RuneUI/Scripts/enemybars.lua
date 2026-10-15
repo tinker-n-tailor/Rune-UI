@@ -4,8 +4,9 @@
 --  - the class defaults of both bars: in each entry of HealthBarTypeConfig the shadow colour takes the main colour, so
 --    every bar made after it shows one colour (the boss bar too; it keeps its own material, frame, notches and sparks);
 --  - the master copy of the normal bar: its fill takes the player's material (MI_Player_Health_bar).
--- A bar that exists already is dressed once (Dress): one colour on its own fill, or, with the player's material, the
--- texture power of the player's bars (bars.lua, ctx.Noise) and the width fix below. The classes may not be loaded until
+-- A bar that exists already is dressed once (Dress): a normal bar with the enemy material gets the player's material
+-- (PlayerFillOn), a boss bar one colour on its own fill, and a bar with the player's material the texture power of the
+-- player's bars (bars.lua, ctx.Noise) and the width fix below. The classes may not be loaded until
 -- the first creature is near, so a missing object is asked for again on the next scan and costs no try. The game frees
 -- a bar when its creature goes, so Handled keeps only the bars that are still listed.
 -- main.lua loads this file with pcall and runs its Scan; there is no switch, as for the player's bars.
@@ -16,7 +17,7 @@ local DEFAULTS = { Normal = "/Game/UI/AI/WBP_AI_Healthbar.Default__WBP_AI_Health
     Boss = "/Game/UI/AI/WBP_AI_Boss_Healthbar.Default__WBP_AI_Boss_Healthbar_C" }
 local MASTER = "/Game/UI/AI/WBP_AI_Healthbar.WBP_AI_Healthbar_C:WidgetTree."   -- + ProgressBarImage (the fill)
 local PLAYER_FILL = "/Game/Materials/UI/VitalsBars/MI_Player_Health_bar.MI_Player_Health_bar"
-local PLAYER_NAME = "MI_Player_Health_bar"
+local PLAYER_NAME, ENEMY_NAME = "MI_Player_Health_bar", "MI_Enemy_Health_Bar"
 local MAIN, SHADOW, NOISE = "Health Bar Main Color", "Health Bar Shadows Color", "Bar Noise Power"
 -- The game writes "Available health/stamina" = 0.9 into a full bar, and the player's material draws only that share of
 -- the width (the enemy material ignores the value). The fill is drawn wider by 1 / 0.9 from its left end, so a full
@@ -75,34 +76,60 @@ local function PlayerFill()
     WidenFill(fill)
 end
 
-local function Colors(list, into)
-    list:ForEach(function(_, e)
+-- a material's own values, by name: every colour (Colors) or every number (Scalars)
+local function Colors(mat)
+    local into = {}
+    mat.VectorParameterValues:ForEach(function(_, e)
         local p = e:get()
-        local name = p.ParameterInfo.Name:ToString()
-        if name == MAIN or name == SHADOW then
-            local c = p.ParameterValue
-            into[name] = { R = c.R, G = c.G, B = c.B, A = c.A }
-        end
+        local c = p.ParameterValue
+        into[p.ParameterInfo.Name:ToString()] = { R = c.R, G = c.G, B = c.B, A = c.A }
     end)
+    return into
+end
+
+local function Scalars(mat)
+    local into = {}
+    mat.ScalarParameterValues:ForEach(function(_, e)
+        local p = e:get()
+        into[p.ParameterInfo.Name:ToString()] = p.ParameterValue
+    end)
+    return into
 end
 
 local function Near(a, b) return math.abs(a.R - b.R) < 0.01 and math.abs(a.G - b.G) < 0.01 and math.abs(a.B - b.B) < 0.01 end
 
--- One colour on a bar made before the class defaults were written. The game writes the bar's colours into the fill
--- itself (a Wither bar is red); the parent's list is the fallback, as in bars.lua.
-local function OneColor(mat)
-    local own = {}
-    Colors(mat.VectorParameterValues, own)
+-- The game writes the bar's colours into the fill itself (a Wither bar is red); the parent's list is the fallback, as
+-- in bars.lua.
+local function MainOf(mat, own)
     local main = own[MAIN]
     local parent = mat.Parent
-    if not main and parent and parent:IsValid() then
-        local base = {}
-        Colors(parent.VectorParameterValues, base)
-        main = base[MAIN]
-    end
+    if not main and parent and parent:IsValid() then main = Colors(parent)[MAIN] end
     if not main then error("no main colour on " .. mat:GetFullName()) end
+    return main
+end
+
+-- one colour on a bar made before the class defaults were written (the boss bar)
+local function OneColor(mat)
+    local own = Colors(mat)
+    local main = MainOf(mat, own)
     if own[SHADOW] and Near(own[SHADOW], main) then return end   -- already one colour
     mat:SetVectorParameterValue(FName(SHADOW), main)
+end
+
+-- A normal bar made before the master copy had the player's fill keeps the enemy material: the creatures that load
+-- with the world, before the HUD is up, so the first bars a player meets. The bar keeps its dynamic material in
+-- ProgressBarMaterialInstance and writes the health into it, so a new one is made from the player's material, takes
+-- the game's values in one colour, and replaces that handle (probe of 15-10-2026).
+local function PlayerFillOn(W, fill, old, player)
+    local colors, scalars = Colors(old), Scalars(old)
+    local main = MainOf(old, colors)
+    colors[MAIN], colors[SHADOW] = main, main
+    fill:SetBrushFromMaterial(player)
+    local mid = fill:GetDynamicMaterial()
+    for name, c in pairs(colors) do mid:SetVectorParameterValue(FName(name), c) end
+    for name, v in pairs(scalars) do mid:SetScalarParameterValue(FName(name), v) end
+    W.ProgressBarMaterialInstance = mid
+    return mid
 end
 
 -- a bar's fill and its dynamic material; nothing while it has none of its own yet
@@ -113,15 +140,21 @@ local function FillOf(W)
     if mat and mat:IsValid() and mat:GetClass():GetFName():ToString() == "MaterialInstanceDynamic" then return fill, mat end
 end
 
-local function Dress(ctx, fill, mat)
-    if not string.find(mat:GetFName():ToString(), PLAYER_NAME, 1, true) then
+-- returns the fill's material after the dressing: a new one when the bar got the player's material here
+local function Dress(ctx, W, fill, mat)
+    local name = mat:GetFName():ToString()
+    local player = string.find(name, ENEMY_NAME, 1, true) and Find(PLAYER_FILL)
+    if player then
+        mat = PlayerFillOn(W, fill, mat, player)
+    elseif not string.find(name, PLAYER_NAME, 1, true) then
         OneColor(mat)
-        return
+        return mat
     end
     if not ctx.Noise then error("no texture power given") end
     mat:SetScalarParameterValue(FName(NOISE), ctx.Noise)
     -- a bar made before the master copy had its fix is drawn at 90%; one made after it comes with the fix
     if math.abs(fill.RenderTransform.Scale.X - 1 / AVAILABLE) > 0.01 then WidenFill(fill) end
+    return mat
 end
 
 -- Handled is set before the dressing, so a bar that fails is not tried again with the same fill
@@ -131,7 +164,7 @@ local function Handle(ctx, W, key)
     local name = mat:GetFullName()
     if Handled[key] == name then return false end
     Handled[key] = name
-    Dress(ctx, fill, mat)
+    Handled[key] = Dress(ctx, W, fill, mat):GetFullName()
     return true
 end
 

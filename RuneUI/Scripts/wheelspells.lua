@@ -22,8 +22,9 @@ local ARC = { Scale = { X = 2.6, Y = 2.6 }, Move = { X = 35.75, Y = 32 }, Gold =
     Hide = { "BackgroundRing", "IconImage", "CooldownText" } }
 -- The two page arrows (BigArrowL, BigArrowR) sit 437 units from the middle, outside the half rings of the next and the
 -- last spellbook (RadialL, RadialR). The mod's look does not show those rings, and the slots' rings end at about 250,
--- so the arrows looked lost (look of 11-10-2026). ARROW_IN moves each towards the middle, in units.
+-- so the arrows sit far out. ARROW_IN moves each towards the middle, in units.
 local ARROW_IN = 130
+local ARROW = "wheel_arrow.png"   -- our picture of a page arrow, pointing left; the game turns the right one itself
 local FONT_AGAIN, FONT_TRIES = 10, 6  -- the HUD font not found yet: seconds to the next try, and how many tries
 local SKIP = { CostBox = true }        -- taken, but not entered: a walk into the rune cost widget crashed the game
 -- Under the wheel, beside the spell's name: "Cooldown 0s" and the room around it go, as the slot shows the cooldown.
@@ -134,6 +135,26 @@ local function Arc(P, J, w)
     return missing
 end
 
+-- The key boxes of game 1.0.1 (QuickCastInputPrompt0..7) are unseen: the game restyles them each time Q opens, so
+-- the mod shows its own number diamonds instead (wheelmeters.lua). The boxes sit in one overlay (QuickCastOverlay),
+-- reached as the parent of the first box; it gets render opacity 0, and the game's styling of each box is left alone. Returns false when it
+-- is not found; the overlay is kept in w.Keys for M.Keys.
+local function Keys(P, J, w)
+    local box = Kid(w.W, "QuickCastInputPrompt0")
+    local holder = box and box:GetParent()
+    if not Ok(holder) then return false end
+    w.Keys = holder
+    P.Set(J, "Q/keys", holder, "Opacity", 0)
+    return true
+end
+
+-- While Q is open: the game restyles the key boxes each time Q opens (seen 14-10-2026), so the overlay is read on every
+-- look and hidden again only when it shows.
+function M.Keys(P, J, w)
+    local holder = w.Keys
+    if Ok(holder) and holder:GetRenderOpacity() > 0 then P.Set(J, "Q/keys", holder, "Opacity", 0) end
+end
+
 -- The boxes of the two page arrows, by name. They are no variables of the wheel (seen in the game, 11-10-2026), so they
 -- are reached down its tree, the way the look of that day walked it: RadialSelectorSBox > Overlay_0 > VerticalBox_1 >
 -- RadialContentOverlay, and there by name. Each step is checked before the next call on it.
@@ -155,8 +176,34 @@ local function Arrows(w)
     return out
 end
 
--- Our look on what only Q has. Returns nil, or the names of the parts that were not found, for the log.
-function M.Style(ctx, P, J, w, now)
+-- The button and the picture of one page arrow, inside its box (seen in the game, 13-10-2026): the box > Overlay >
+-- LeftButton or RightButton (WBP_DomButton_SelectorArrow_C, render opacity 0.8) > InternalRootButtonBase > Overlay >
+-- ImageScaleBox > LabelImage (T_Arrow_Big, pale and half clear). Each step is checked before the next call on it.
+local function ArrowParts(box)
+    local button, image
+    pcall(function()
+        local at = box:GetContent()
+        if not Ok(at) then return end
+        for i = 0, at:GetChildrenCount() - 1 do
+            local c = at:GetChildAt(i)
+            if Ok(c) and c:GetClass():GetFName():ToString() == "WBP_DomButton_SelectorArrow_C" then button = c end
+        end
+        local tree = button and button.WidgetTree
+        at = Ok(tree) and tree.RootWidget
+        at = Ok(at) and at:GetContent()
+        if not Ok(at) then return end
+        for i = 0, at:GetChildrenCount() - 1 do
+            local c = at:GetChildAt(i)
+            local img = Ok(c) and c:GetFName():ToString() == "ImageScaleBox" and c:GetContent()
+            if Ok(img) and img:GetFName():ToString() == "LabelImage" then image = img end
+        end
+    end)
+    return button, image
+end
+
+-- Our look on what only Q has. Tex gives one of our pictures by its file name, or nothing when it does not load.
+-- Returns nil, or the names of the parts that were not found, for the log.
+function M.Style(ctx, P, J, w, now, Tex)
     local gone = {}
     local m = Middle(w)
     if m then
@@ -184,16 +231,28 @@ function M.Style(ctx, P, J, w, now)
             end
         else gone[#gone + 1] = "CostBox" end
     else gone[#gone + 1] = "SpellName" end
+    -- Our picture goes on each page arrow's image and the button gets full strength, as the game's pale arrow is lost
+    -- on a light floor.
     local arrows = Arrows(w)
     for _, a in ipairs({ { "BigArrowL", ARROW_IN }, { "BigArrowR", -ARROW_IN } }) do
-        local arrow = arrows[a[1]]
-        if arrow then P.Set(J, "Q/" .. a[1], arrow, "Move", { X = a[2], Y = 0 }) else gone[#gone + 1] = a[1] end
+        local name, button, image = a[1], nil, nil
+        if arrows[name] then
+            P.Set(J, "Q/" .. name, arrows[name], "Move", { X = a[2], Y = 0 })
+            button, image = ArrowParts(arrows[name])
+        end
+        local tex = button and image and Tex(ARROW)
+        if tex then
+            P.Set(J, "Q/" .. name .. "/picture", image, "Picture", tex)
+            P.Set(J, "Q/" .. name .. "/button", button, "Opacity", 1)
+        elseif not arrows[name] then gone[#gone + 1] = name
+        elseif not (button and image) then gone[#gone + 1] = "the picture of " .. name end
     end
     w.FontTries, w.Want = 0, {}
     M.Fonts(ctx, P, J, w, now)
     M.Fit(P, J, w)
     local missing = Arc(P, J, w)
     if missing > 0 then gone[#gone + 1] = "the cooldown parts of " .. missing .. " slots" end
+    if not Keys(P, J, w) then gone[#gone + 1] = "the key boxes" end
     return #gone > 0 and table.concat(gone, ", ") or nil
 end
 

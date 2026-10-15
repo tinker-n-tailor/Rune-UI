@@ -113,7 +113,6 @@ local function Recipes(ctx, S)
             RadialImage = { game },
             Icon = { S.Only("SegmentedRadialBar", S.Remember("Glyph", true)), game } } },
         { Class = "WBP_EnvAndPlayerStatus_Item_C", Texts = { font }, Parts = { Background = { band, S.Lines } } },
-        { Class = "WBP_Notification_ItemBreak_Item_C", Texts = { font }, Parts = {} },
     }
     if M.PerkLook then
         list[#list + 1] = { Class = "WBP_QuestAndUnlocks_Item_C", Parts = {

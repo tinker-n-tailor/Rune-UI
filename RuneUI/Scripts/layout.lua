@@ -27,7 +27,7 @@ function M.ById(id)
 end
 
 -- Elements with no widget of their own: they only switch something on or off
-local SWITCH = { creatures = true, baricons = true, immersive = true, aim = true, runexp = true, questnext = true, cdhoriz = true,
+local SWITCH = { creatures = true, baricons = true, barnumbers = true,immersive = true, aim = true, runexp = true, floatxp = true, cdhoriz = true,
     slimlevel = true, combattext = true, wheels = true, dialskin = true }
 function M.IsSwitch(E) return SWITCH[E.Custom] == true end
 -- The box of E: width and height swap while the switch named in E.Turn is on (the spell cooldowns, as a row). It
@@ -37,7 +37,7 @@ function M.Box(E)
     return E.Size.X, E.Size.Y
 end
 -- Elements the mod draws on the viewport, not inside the game's HUD scale box
-local VIEWPORT = { map = true, creatures = true, cooldowns = true, questtracker = true, party = true }
+local VIEWPORT = { map = true, creatures = true, cooldowns = true, party = true }
 function M.OnViewport(E) return VIEWPORT[E.Custom] == true end
 
 -- The edge an element follows on a screen of another shape: the third of the screen it sits in,

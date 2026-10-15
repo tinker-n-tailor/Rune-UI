@@ -1,7 +1,7 @@
 -- Rune UI: move, resize and hide parts of the Dragonwilds HUD, with a new minimap, survival rings and bars.
 -- F9 opens the layout editor, F5 Rune Skin, F8 Rune Map, F6 the immersive mode. A timer applies the layout; gold corners mark the selected element.
 
-local VERSION = "1.12"
+local VERSION = "1.13"
 
 local function Log(msg) print("[RuneUI] " .. msg .. "\n") end
 Log("starting " .. VERSION .. " on " .. tostring(_VERSION))
@@ -99,8 +99,6 @@ if Skin then Skin.Attach(ById, Defaults) end
 -- perf line reads. The parts ask it through their ctx.
 local Finder = Need("finder")
 Finder.Init({ Elements = Elements, ById = ById, Hud = Layout.Hud, Log = Log })
-local Beds = Need("beds")   -- the game's reports of new actors, for the bed names
-Beds.Init({ Log = Log, Finder = Finder })
 
 -- The editor's state. The key handlers write it on UE4SS's thread and the step reads it; the fields are all here from
 -- the start (false, never nil, as with E.Moved), so a write there never grows the table while the step reads it.
@@ -119,7 +117,7 @@ local World, Step = Need("world"), Need("step")   -- the watch for a new world, 
 local Keys = Need("keys")
 local Wired = Need("wiring").Build({ LoadPart = LoadPart, AddPart = AddPart, Log = Log, Elements = Elements, ById = ById,
     Defaults = Defaults, Settings = Settings, Cfg = Cfg, SaveCfg = SaveCfg, Key = Keys.KEY, Ed = Ed, Engine = Engine, MayTry = MayTry,
-    Failed = Failed, Finder = Finder, Apply = Apply, MapPanel = MapPanel, World = World, Beds = Beds, Step = Step })
+    Failed = Failed, Finder = Finder, Apply = Apply, MapPanel = MapPanel, World = World, Step = Step })
 local Camera, RuneMap, Buffs = Wired.Camera, Wired.RuneMap, Wired.Buffs
 
 -- The list panel that is open (F6, F8 or F5), nil for none. The arrows and Backspace go to it, and the step draws it.
@@ -137,17 +135,17 @@ Keys.Init({ Log = Log, Ed = Ed, Elements = Elements, Defaults = Defaults, Prof =
 Overlay.Init({ Log = Log, Elements = Elements, Defaults = Defaults, Groups = Groups, Ed = Ed, Prof = Prof, KEY = Keys.KEY,
     Parts = Parts, ListPanel = ListPanel, Panels = Panels, Layout = Layout, Engine = Engine, World = World,
     MayTry = MayTry, Failed = Failed, Editor = LoadPart("editor"), Grid = LoadPart("grid") })
-World.Init({ Log = Log, Elements = Elements, Finder = Finder, Apply = Apply, Parts = Parts, Engine = Engine, Beds = Beds,
+World.Init({ Log = Log, Elements = Elements, Finder = Finder, Apply = Apply, Parts = Parts, Engine = Engine,
     Overlay = Overlay })
 
 -- The perf lines in UE4SS.log, every 60 s, are made in perf.lua. Perf is its counter: the step adds its times to it.
 local Perf = Need("perf")
-Perf.Init({ Log = Log, ById = ById, Elements = Elements, RuneMap = RuneMap, Finder = Finder, Actors = Beds.Actors,
+Perf.Init({ Log = Log, ById = ById, Elements = Elements, RuneMap = RuneMap, Finder = Finder,
     Census = LoadPart("census") })
 if Wired.Util.Chain then Wired.Util.Chain.Add = Perf.Add end   -- the chains count their calls by part too
 
 Step.Init({ Log = Log, Parts = Parts, Ed = Ed, Prof = Prof, World = World, Finder = Finder, Apply = Apply, Perf = Perf,
-    Profiles = Profiles, Overlay = Overlay, Keys = Keys, Beds = Beds, Buffs = Buffs, Camera = Camera, Skin = Skin })
+    Profiles = Profiles, Overlay = Overlay, Keys = Keys, Buffs = Buffs, Camera = Camera, Skin = Skin })
 Step.Start()
 
 -- A player restart (entering a world, respawning) can rebuild the game's HUD: drop every handle into it

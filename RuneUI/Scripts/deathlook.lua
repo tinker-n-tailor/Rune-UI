@@ -11,8 +11,11 @@
 -- Above the band: MainTextBox (the text and its two flourishes) gets a render translation. The game does not put it back
 -- (seen live, 07-10-2026); the look at every EVERY seconds writes it again if it did. The lift is tuned for the big text, so
 -- it follows the style: a show lifts only when the class defaults were already ours when the show began (the game styles the
--- text at the show, before a look can write them). The first death of a game run is the game's own screen, untouched; the
--- next death is red, big and lifted. A show is a change of the screen's visibility to shown, read on the look.
+-- text at the show, before a look can write them). A show is a change of the screen's visibility to shown, read on the look.
+-- Before any death: the game loads the style class only at the first death, so the mod loads it itself (ctx.Asset, by the
+-- path read from DeathText.Style in the game, 13-10-2026) and writes the class defaults then. Each look checks that the
+-- defaults it loaded are still there, and loads them again when the engine freed them. When the load gives nothing, the
+-- first death of a game run is the game's own screen, and the next death is red, big and lifted.
 -- The parts are found by name in the widget's tree. A widget that was freed is not called: the full name is compared first.
 -- combattext.lua gives Find, PathOf and Rgba (ctx.Combat).
 
@@ -20,6 +23,8 @@ local M = {}
 
 local CLASS = "WBP_HUD_Death_C"
 local STYLE = "CUIS_Death_YouDiedTextStyle_C"
+local PKG = "/Game/UI/Styles/Texts/CUIS_Death_YouDiedTextStyle"   -- the package of the style class
+local LINES = 5        -- the most log lines about a load of the style class in one game run
 local BOX, TEXT = "MainTextBox", "DeathText"
 local SPARKS = { Niagara_TopLine = true, Niagara_BottomLine = true }
 local COLLAPSED = 1    -- ESlateVisibility
@@ -30,6 +35,7 @@ local EVERY = 0.5      -- seconds between two looks
 local NODES, DEPTH = 80, 8   -- the most widgets the search by name visits, and its depth
 
 local Own = {}   -- style path -> the game's own size; it outlives a world, as the class defaults may too
+local Kept = {}  -- the class defaults the mod loaded itself: Cdo, Key, Loads, and Off when the load gave nothing in this world
 local S
 
 local function Fresh(logged) return { Parts = {}, Logged = logged or {}, Step = {}, Next = 0 } end
@@ -89,8 +95,24 @@ local function Quiet(ctx, p)
     Once(ctx, "quiet", "the sparks on the two gold lines are off")
 end
 
--- The style class defaults of the text: red, and BIG times the game's own size.
--- Returns whether the defaults are ours now, and whether they were ours before this look (red).
+-- The class defaults of the style: red, and BIG times the game's own size (kept by the path of the style class).
+-- Returns whether the defaults are ours now, and whether they were ours before this call (red).
+local function Paint(ctx, cdo, path)
+    local fi = cdo.Font
+    local size = fi.Size
+    if type(size) ~= "number" or size <= 0 then Once(ctx, "size", "the size of the style is not a number, left alone") return false, false end
+    local red = IsRed(cdo.Color)
+    local own = Own[path]
+    -- not red and not our size: these are the game's values (again), as a class that loaded again holds them
+    if not red and not (own and Near(size, own * BIG, 0.01)) then own = size Own[path] = size end
+    if not own then Once(ctx, "own", "the style is red and its own size is not known, left alone") return false, red end
+    local want = own * BIG
+    if not red then cdo.Color = ctx.Combat.Rgba(RED) end   -- first: a failed size write is made good at the next look, from Own
+    if not Near(size, want, 0.01) then fi.Size = want end
+    return true, red
+end
+
+-- The style of the text a death screen holds, by the class in DeathText.Style.
 local function Dress(ctx, p)
     local Combat = ctx.Combat
     local cdo = p.Cdo
@@ -104,18 +126,30 @@ local function Dress(ctx, p)
         if not cdo then Once(ctx, "defaults", "no class defaults of " .. STYLE .. ", left alone") return false, false end
         p.Cdo, p.CdoKey, p.Path = cdo, cdo:GetFullName(), path
     end
-    local fi = cdo.Font
-    local size = fi.Size
-    if type(size) ~= "number" or size <= 0 then Once(ctx, "size", "the size of the style is not a number, left alone") return false, false end
-    local red = IsRed(cdo.Color)
-    local own = Own[p.Path]
-    -- not red and not our size: these are the game's values (again), as a class that loaded again holds them
-    if not red and not (own and Near(size, own * BIG, 0.01)) then own = size Own[p.Path] = size end
-    if not own then Once(ctx, "own", "the style is red and its own size is not known, left alone") return false, red end
-    local want = own * BIG
-    if not red then cdo.Color = Combat.Rgba(RED) end   -- first: a failed size write is made good at the next look, from Own
-    if not Near(size, want, 0.01) then fi.Size = want end
-    return true, red
+    return Paint(ctx, cdo, p.Path)
+end
+
+-- The style before any death: the class defaults are found, or loaded with the mod's loader, and written. The loader
+-- gets the path of the class first and the path of its asset second; either one loads the package with the defaults.
+local function Ahead(ctx)
+    local path, defaults = PKG .. "." .. STYLE, PKG .. ".Default__" .. STYLE
+    if not (Ok(Kept.Cdo) and Kept.Cdo:GetFullName() == Kept.Key) then
+        if Kept.Off then return end
+        local t = os.clock()
+        local cdo = ctx.Combat.Find(defaults)
+        if not cdo then ctx.Asset(path) cdo = ctx.Combat.Find(defaults) end
+        if not cdo then ctx.Asset(PKG .. "." .. string.gsub(STYLE, "_C$", "")) cdo = ctx.Combat.Find(defaults) end
+        if not cdo then
+            Kept.Off = true
+            ctx.Log("death look: the style of 'You Died' did not load, the first death keeps the game's look")
+            return
+        end
+        Kept.Cdo, Kept.Key, Kept.Loads = cdo, cdo:GetFullName(), (Kept.Loads or 0) + 1
+        if Kept.Loads <= LINES then
+            ctx.Log(string.format("death look: the style of 'You Died' is ready before a death (load %d, %.0f ms)", Kept.Loads, (os.clock() - t) * 1000))
+        end
+    end
+    Paint(ctx, Kept.Cdo, path)
 end
 
 -- Is the screen on show: visible, or seen with the mouse going through (ESlateVisibility 0, 3, 4)? nil when it cannot be read.
@@ -155,10 +189,17 @@ function M.Tick(ctx)
             if not ok then ctx.Failed(S.Step) ctx.Log("death look: failed: " .. tostring(err)) end
         end
     end
+    -- after the looks: a screen made since the last look is read with the defaults the game gave it
+    local ok, err = pcall(Ahead, ctx)
+    if not ok then Kept.Off = true ctx.Log("death look: the style before a death failed: " .. tostring(err)) end
 end
 
 -- A new world: the handles are dropped. The game's own sizes stay (Own); the class defaults may hold ours still.
-function M.Forget(sameWorld) S = Fresh(sameWorld and S.Logged) end
+-- A new world gives a new try to load the style class.
+function M.Forget(sameWorld)
+    S = Fresh(sameWorld and S.Logged)
+    if not sameWorld then Kept.Off = nil end
+end
 
 -- for the F9 panel's warning line: the look gave up (see MayTry)
 function M.Problem() return (S.Step.Fails or 0) >= 3 end

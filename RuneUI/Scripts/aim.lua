@@ -71,9 +71,13 @@ end
 local function Paint(m)
     if m.Kind == "brush" then
         local t = m.W.Brush.TintColor.SpecifiedColor
-        if not IsGold(t) then
+        -- our mark picture (Spell) is gold itself: a gold tint over it reads darker than the staff's target mark,
+        -- so it gets white; the game's white arcs, while our picture is not on, get gold
+        local ours = m.Tex and m.Tex:IsValid()
+        if (ours and not (t.R == 1 and t.G == 1 and t.B == 1)) or (not ours and not IsGold(t)) then
             Saved[m.Key .. "#brush"] = Saved[m.Key .. "#brush"] or Copy(t)
-            m.W:SetBrushTintColor({ SpecifiedColor = Gold(t.A), ColorUseRule = 0 })
+            local c = ours and { R = 1, G = 1, B = 1, A = t.A } or Gold(t.A)
+            m.W:SetBrushTintColor({ SpecifiedColor = c, ColorUseRule = 0 })
         end
     end
     if m.Kind == "image" then   -- not "brush" as well: gold on gold reads darker
@@ -81,6 +85,13 @@ local function Paint(m)
         if not IsGold(c) then
             Saved[m.Key] = Saved[m.Key] or Copy(c)
             m.W:SetColorAndOpacity(Gold(c.A))
+        end
+        -- the staff's dot has a brush tint of white at 0.75 (WBP_ReticleMagic in the game files), so it read dimmer
+        -- than the dot of a tool (screenshots of 15-10-2026): every dot's brush tint is solid white
+        local t = m.W.Brush.TintColor.SpecifiedColor
+        if t.A < 1 then
+            Saved[m.Key .. "#brush"] = Saved[m.Key .. "#brush"] or Copy(t)
+            m.W:SetBrushTintColor({ SpecifiedColor = { R = 1, G = 1, B = 1, A = 1 }, ColorUseRule = 0 })
         end
     elseif m.Kind == "bar" then
         local c = m.W.FillColorAndOpacity
@@ -123,7 +134,11 @@ local function Unpaint(m)
         end
         m.Tex = nil
     end
-    if m.Kind == "image" then m.W:SetColorAndOpacity(o or { R = 1, G = 1, B = 1, A = m.W.ColorAndOpacity.A })
+    if m.Kind == "image" then
+        m.W:SetColorAndOpacity(o or { R = 1, G = 1, B = 1, A = m.W.ColorAndOpacity.A })
+        local t = Saved[m.Key .. "#brush"]
+        Saved[m.Key .. "#brush"] = nil
+        if t then m.W:SetBrushTintColor({ SpecifiedColor = t, ColorUseRule = 0 }) end
     elseif m.Kind == "bar" then m.W:SetFillColorAndOpacity(o or { R = 1, G = 1, B = 1, A = m.W.FillColorAndOpacity.A })
     elseif m.Kind == "material" then
         local mid = m.Mid or m.W:GetDynamicMaterial()
@@ -208,8 +223,10 @@ local function Ring(ctx)
         Saved.Ring = { Tex = string.match(full, "^%S+%s+(.*)$") or full, Tint = Copy(b.TintColor.SpecifiedColor), Color = Copy(I.ColorAndOpacity) }
     end
     b.ResourceObject = tex
+    -- the gold is in the picture: a colour on the template's image did not reach the rings in the game (a white mark
+    -- seen 14-10-2026), and a white one keeps a ring that does take it from being gold twice
     b.TintColor = { SpecifiedColor = { R = 1, G = 1, B = 1, A = 1 }, ColorUseRule = 0 }
-    I.ColorAndOpacity = Gold(1)
+    I.ColorAndOpacity = { R = 1, G = 1, B = 1, A = 1 }
     M.Ring = I
     ctx.Log(string.format("aim: gold diamond in the target ring template (search %.0f ms)", (os.clock() - t0) * 1000))
 end

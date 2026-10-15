@@ -169,7 +169,7 @@ local function Style(ctx, P, w)
     end
     w.Styled = true
     if d.Spells and ctx.Spells then
-        local okM, note = pcall(ctx.Spells.Style, ctx, P, J, w, os.clock())
+        local okM, note = pcall(ctx.Spells.Style, ctx, P, J, w, os.clock(), Tex)
         if note then Once(ctx, "spells", (okM and "Q: not found: " or "Q: its own parts failed: ") .. tostring(note)) end
     end
     Sparks(ctx, w, os.clock())
@@ -337,7 +337,11 @@ function M.Tick(ctx)
         S.Next = now + FAST
         Once(ctx, "qopen", "the Q wheel reads open")
         Books(ctx, Q)
-        if ctx.Spells then ctx.Spells.Fit(P, S.J, Q) end
+        if ctx.Meters then ctx.Meters.Keys(ctx, Q) end
+        if ctx.Spells then
+            ctx.Spells.Fit(P, S.J, Q)
+            ctx.Spells.Keys(P, S.J, Q)
+        end
     end)
     if not okQ then Once(ctx, "fit", "Q wheel step failed: " .. tostring(errQ)) end
 end

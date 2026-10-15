@@ -1,5 +1,4 @@
--- The gold line of the loading screen, pointed at both ends: the bars' line (bars.lua), the XP bar (xp.lua) and the
--- top of the quest tracker (questtracker.lua) all draw it here.
+-- The gold line of the loading screen, pointed at both ends: the bars' line (bars.lua), the XP bar (xp.lua) draw it here.
 -- The picture, 1048x34, is pointed at its right end only: two copies, each squeezed into half of the box, in a
 -- HorizontalBox, the left one mirrored, make a line pointed at both ends.
 -- The picture has no glow in its first third, at the blunt end. With the whole picture, a thick line (a level up in

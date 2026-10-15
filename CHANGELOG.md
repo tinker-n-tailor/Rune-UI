@@ -4,6 +4,34 @@ All changes to Rune UI, newest first.
 
 ## [Unreleased]
 
+## [1.13] - 2026-10-15
+
+### Added
+
+- A switch for the numbers on the health bar. Off at first.
+- A switch for the floating XP that game 1.0.1 added. Off at first.
+
+### Changed
+
+- The quest tracker is the game's own tracker in the Rune UI look.
+- Redesign of the wheels, for the changes of game 1.0.1.
+- "Crosshair in immersive mode" has two more choices: Aim + tools, and Nothing.
+
+### Removed
+
+- The XP numbers and Broken item warning rows of the editor (F9).
+
+### Fixed
+
+- Rune Map shows again in game 1.0.1.
+- The quest icons on the big map show on top of the fog.
+- The immersive camera works again in game 1.0.1.
+- The weapon aim mark.
+- The look of the death screen.
+- The health bars of the enemies near you when a world loads.
+- Small visual fixes to the buff and debuff icons.
+- A small hook for the claimed bed's name slowed the game, most of all at a crowded base.
+
 ## [1.12] - 2026-10-11
 
 ### Added

@@ -54,12 +54,13 @@ F5, F8, F6                                 save and close
 Wheels                                     Spell, item and emote wheels as rings. Off: the game's wheels. On at first.
 Combat text                                Bigger damage numbers. On at first.
 XP under the bars                          XP bar under the bars. Off: the game's XP circle. On at first.
+Floating XP                                The game's XP over a hit enemy. Off at first.
 Small level up notice                      Level up under the bars. Off: the game's banner. On at first.
 Gold crosshair and lock-on                 Gold aim marks. On at first.
 Day and night icon                         The day and night dial as a sun and moon icon. Off: the game's dial. On at first.
 Game icons beside the bars                 Shows them. Off at first.
+Health numbers                             The game's numbers on the health bar. Off at first.
 Spell cooldowns in a row                   Tiles in a row. Off at first.
-Next quest steps                           Up to three next steps in the quest tracker. Off at first.
 
 Rune Map                                   Off: no map.
 Faces north                                On: north stays at the top.
@@ -73,7 +74,7 @@ Map refresh                                Every 2nd frame (at first). Every fra
 
 Immersive mode                             On: the HUD fades when nothing happens. Off at first.
 Wait before the fade                       3 to 30 s, 8 at first.
-Crosshair in immersive mode                Show (at first) or Aim only: no dot except while you aim.
+Crosshair in immersive mode                Show (at first), Aim + tools (the dot while you aim, build or hold a tool), Aim only (the dot while you aim) or Nothing (no dot).
 Immersive camera                           On: a closer camera, with or without immersive mode. Off at first.
 Walk distance                              100 to 1500 cm, 300 at first.
 Side offset                                0 to 200 cm, 90 at first.
@@ -87,7 +88,7 @@ In immersive mode, a survival ring shows while its need is orange or red, and fo
 Other parts:
 
 Enemy and boss bars                        One colour. Always on.
-Quest tracker                              Under Rune Map.
+Quest tracker                              The game's own tracker in the Rune UI look: no dark band, the quest in gold, the steps in white. Under Rune Map at first.
 Day and night dial                         Hidden at first, as the ring of Rune Map is the clock. Show it in F9 to see the time as an icon.
 Party panel                                Friends in co-op. On at first.
 Arrow and rune count                       The count only. The crosshair stays.

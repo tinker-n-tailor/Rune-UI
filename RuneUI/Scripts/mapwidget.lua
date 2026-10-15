@@ -1,6 +1,6 @@
 -- The map inside RuneMap: the game's own minimap widget, fed by a map view of ours on the player, and its terrain.
 -- runemap.lua calls MakeView and MakeMap at each build, SetUpAgain once the map is on screen, and ClassReady before a
--- build. The map has no fog: the mod has no record of where the player has been.
+-- build. The map has no fog: the mod has no record of where the player has been. It has no shadow frame either.
 
 local P = {}
 local M = nil   -- the map's own table (runemap.lua), given in Init
@@ -148,6 +148,30 @@ local function AddBackgrounds(ctx, map)
         firstErr and (", first error: " .. firstErr) or ""))
 end
 
+-- The game's dark vignette over the map (an Image named ShadowFrame in Overlay_Layers) is made for the big map. Since
+-- game 1.0.1 it covers RuneMap all but a small circle round the player (probes 1 to 25 of 14-10-2026), so it is
+-- collapsed. Found by name in a short walk of the map's own tree; a user widget inside is not entered.
+local FRAME, FRAME_NODES, FRAME_DEPTH = "ShadowFrame", 60, 6
+local function HideFrame(ctx, map)
+    local seen, frame = 0, nil
+    local function Visit(W, depth)
+        if frame or seen >= FRAME_NODES or depth > FRAME_DEPTH or not (W and W:IsValid()) then return end
+        seen = seen + 1
+        if W:GetFName():ToString() == FRAME then frame = W return end
+        if depth > 1 and string.find(W:GetClass():GetFName():ToString(), "^WBP_") then return end
+        local ok, count = pcall(function() return W:GetChildrenCount() end)
+        if ok and count then
+            for i = 0, count - 1 do Visit(W:GetChildAt(i), depth + 1) end
+        else
+            pcall(function() Visit(W:GetContent(), depth + 1) end)
+        end
+    end
+    Visit(map.WidgetTree.RootWidget, 1)
+    if not frame then M.Once(ctx, "noframe", "runemap: no " .. FRAME .. " in the map, left alone") return end
+    if frame:GetVisibility() ~= 1 then frame:SetVisibility(1) end   -- collapsed
+    M.Once(ctx, "frame", "runemap: the game's shadow frame over the map is off")
+end
+
 function P.MakeMap(ctx, PC, view)
     local cls = ctx.Asset(MAP_CLASS)
     if not (cls and cls:IsValid()) then error("minimap class not loaded; open the M map once") end
@@ -173,6 +197,9 @@ function P.MakeMap(ctx, PC, view)
         local ok, err = pcall(c[2])
         if not ok then ctx.Log("runemap: " .. c[1] .. " failed: " .. tostring(err)) end
     end
+    -- at once, or the new map shows dark for the second until SetUpAgain (after every visit to the big map)
+    local okF, errF = pcall(HideFrame, ctx, map)
+    if not okF then M.Once(ctx, "frameerr", "runemap: the shadow frame not hidden: " .. tostring(errF)) end
     return map
 end
 
@@ -206,6 +233,8 @@ function P.SetUpAgain(ctx)
         for i = kids - 1, M.TerrainAt, -1 do canvas:GetChildAt(i):RemoveFromParent() end
         if kids > M.TerrainAt then M.Once(ctx, "terraincopies", "runemap: extra terrain copies taken off the map") end
     end)
+    local okF, errF = pcall(HideFrame, ctx, map)
+    if not okF then M.Once(ctx, "frameerr", "runemap: the shadow frame not hidden: " .. tostring(errF)) end
     local ms = function(a, b) return (b - a) * 1000 end
     ctx.Log(string.format("runemap: set up again in %.1f ms (terrain %.1f, shape %.1f, size %.1f, layout %.1f, trim %.1f)",
         ms(t0, os.clock()), ms(t0, t1), ms(t1, t2), ms(t2, t3), ms(t3, t4), ms(t4, os.clock())))
