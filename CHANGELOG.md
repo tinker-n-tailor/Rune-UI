@@ -1,66 +1,91 @@
 # Changelog
 
-All changes to Rune UI, newest first.
+This file lists all notable changes to Rune UI, newest first.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.14] - 2026-10-19
+
+### Added
+
+- A Rune Skin switch that hides the health bars over enemies.
+- Numbers on the stamina bar.
+
+### Changed
+
+- "Health numbers" is now "Bar numbers", for the health and stamina bars.
+- In immersive mode, the ammo counter shows on a swap, shot, cast or draw.
+- The immersive camera moves slower between views and settles softly.
+- The arrow name fades a few seconds after a swap, like the rune name.
+- The crosshair setting also works with the immersive mode off.
+- The install steps use the UE4SS file from Nexus.
+
+### Fixed
+
+- The pictures load again when the install left out the Art folder.
+- A tool bar hidden on the HUD shows in the bag again.
+- The tool bar goes back to its place as soon as the bag closes.
+- The big map zooms one step per push of the gamepad stick.
 
 ## [1.13] - 2026-10-15
 
 ### Added
 
-- A switch for the numbers on the health bar. Off at first.
-- A switch for the floating XP that game 1.0.1 added. Off at first.
+- A switch for the numbers on the health bar.
+- A switch for the floating XP that game 1.0.1 added.
 
 ### Changed
 
 - The quest tracker is the game's own tracker in the Rune UI look.
-- Redesign of the wheels, for the changes of game 1.0.1.
-- "Crosshair in immersive mode" has two more choices: Aim + tools, and Nothing.
+- Redesign of the wheels for game 1.0.1.
+- Two more choices for "Crosshair in immersive mode": Aim + tools, and Nothing.
 
 ### Removed
 
-- The XP numbers and Broken item warning rows of the editor (F9).
+- The XP numbers and Broken item warning rows in the editor (F9).
 
 ### Fixed
 
 - Rune Map shows again in game 1.0.1.
-- The quest icons on the big map show on top of the fog.
 - The immersive camera works again in game 1.0.1.
-- The weapon aim mark.
-- The look of the death screen.
-- The health bars of the enemies near you when a world loads.
-- Small visual fixes to the buff and debuff icons.
-- A small hook for the claimed bed's name slowed the game, most of all at a crowded base.
+- Quest icons on the big map no longer hide under the fog.
+- Fixes to the weapon aim mark.
+- Fixes to the look of the death screen.
+- Fixes to the health bars of nearby enemies when a world loads.
+- Buff and debuff icons are easier to read by day and by night.
+- A claimed bed's name no longer slows the game, worst at a crowded base.
 
 ## [1.12] - 2026-10-11
 
 ### Added
 
-- A redesigned mouse pointer.
-- Quest icons on the big map: gold for the main quest, blue for a side quest, green for a task.
-- A grid in the editor (F9). G hides it.
-- A salvage pile indicator on RuneMap and on the compass.
+- Quest icons on the big map, coloured by the kind of quest.
+- A grid in the editor (F9).
+- Salvage piles on Rune Map and on the compass.
 
 ### Changed
 
-- Buffs and debuffs have new flat icons. An icon empties as its time runs out, in place of the thin bar under it.
+- Redesign of the mouse pointer.
+- Redesign of the buff and debuff icons.
+- Redesign of the quest area marks on the big map and Rune Map.
+- Small changes to the look of the spell wheel.
 - The mark of an aimed spell is the gold diamond.
-- The page arrows of the spell wheel sit closer to the circles.
-- The circle of a quest area on the big map is faint, and it no longer blocks the mouse.
-- The white triangle of a quest area is smaller and sits beside the shield. On RuneMap it has the size of the map's icons.
-- The big map zooms in three steps: close, the zone, the whole map.
-- Map icons show the game's pointer, not the cross.
-- In a dungeon, RuneMap is a radar: a dark plate with your arrow, the creatures and the resources. It showed a flat grey before.
+- The big map zooms in three steps: close, the zone and the whole map.
+- Map icons show the game's pointer in place of the cross.
+- In a dungeon, Rune Map is a radar with your arrow, creatures and resources.
 
 ### Fixed
 
-- A visual fix for the survival and buff rings.
-- The big map no longer gets slower in a long session while RuneMap is hidden or faded out.
+- The circle of a quest area on the big map no longer blocks the mouse.
+- The big map no longer slows over time while Rune Map is hidden or faded.
 - The mod no longer takes more memory with every minute of play.
-- Four fixes from jonesing4space: a new buff shows at once, RuneMap stutters less, a changed map setting no longer redraws the map, a failed map leaves the screen.
-- The frame of the editor has the real size of a part: it was too big, or beside the part.
-- Minor visual tweaks.
-- The compass causes a shorter stutter when it looks for creatures and resources.
+- The compass stutters less when it looks for creatures and resources.
+- A new buff shows at once (by jonesing4space).
+- Rune Map stutters less (by jonesing4space).
+- A changed map setting no longer redraws the map (by jonesing4space).
+- A map that fails no longer stays on the screen (by jonesing4space).
+- The editor frame no longer sits too big or beside the selected part.
+- Small visual fixes to the survival and buff rings.
+- Small visual fixes.
 
 ## [1.11] - 2026-10-10
 
@@ -71,283 +96,277 @@ All changes to Rune UI, newest first.
 
 ### Changed
 
-- The mod is much lighter, and the hitches are gone.
-- After a fresh install, the combat key hints and the tool wheel hint of the game show.
+- The mod is much lighter.
+- A fresh install shows the game's combat key hints and tool wheel hint.
 - Clearer names for some settings.
 
 ### Removed
 
-- Support for an old UE4SS. The mod needs the UE4SS experimental build.
+- Support for old UE4SS builds: the mod needs the UE4SS experimental build.
 
 ### Fixed
 
-- A long item name in the tool wheel goes to a second line.
-- In immersive mode, the ring of a need that is at 0 now shows.
+- The hitches are gone.
+- A long item name no longer runs out of the tool wheel.
+- In immersive mode, the ring of a need at 0 no longer stays hidden.
 - Small fixes.
 
 ## [1.10] - 2026-10-08
 
 ### Added
 
-- Redesign of the spell, quick access and emote wheels.
-- Rune Skin panel on F5: one switch for each redesigned part.
+- Rune Skin panel on F5, with a switch for each redesigned part.
 
 ### Changed
 
+- Redesign of the spell wheel.
+- Redesign of the quick access wheel.
+- Redesign of the emote wheel.
 - Redesign of the notices.
 - Redesign of the death screen.
 - The F9 list is shorter and sorted into groups.
-- Immersive mode moved to the F6 panel, now named Immersion mode.
-- The immersive camera works with or without the immersive mode.
+- The immersive mode settings move to the F6 panel, named Immersion mode.
+- The immersive camera works with or without immersive mode.
 - In immersive mode, a survival ring shows only when its need is critical.
 
 ## [1.9.2] - 2026-10-07
 
 ### Added
 
-- Map setting "Drawing: Fastest".
+- A "Fastest" choice for the map setting "Drawing".
 
 ### Changed
 
-- RuneMap is more responsive with ore, herbs and other resources.
+- Rune Map is more responsive with ore, herbs and other resources.
 
 ### Fixed
 
-- The FPS no longer drops over time with RuneMap on.
+- The FPS no longer drops over time with Rune Map on.
 
 ## [1.9.1] - 2026-10-06
 
 ### Changed
 
-- The tool bar now sits in the bag while the bag is open, also with a mouse and keyboard.
+- The tool bar sits in the open bag with a mouse and keyboard too.
+- The lock-on view is the game's own again.
 
 ### Fixed
 
-- In the immersive mode, a hidden bar no longer shows gold dust when it fills.
-- The camera no longer turns round and round when a locked-on enemy comes very close: the lock-on view is the game's own again.
+- In immersive mode, a hidden bar no longer shows gold dust when it fills.
+- The camera no longer spins when a locked-on enemy comes very close.
 - The name of an enemy shows above its health bar again.
-- The quest tracker, the party panel and the spell cooldown tiles now try again after a failed start.
-- The marks on the compass now show also when the game starts from another folder.
-- The Profile row in Mod Menu no longer changes the profile on a value that is not 1, 2 or 3.
+- The quest tracker, party panel and spell cooldowns recover after a failed start.
+- Compass marks show when the game starts from another folder.
+- The Profile row in Mod Menu ignores values other than 1, 2 and 3.
 
 ## [1.9] - 2026-10-06
 
-1.9 holds everything that 1.8 was to bring, and it adds a panel for the health of your friends. It also adds an immersive camera, new enemy health bars and clearer combat text.
-
 ### Added
 
-- Immersive camera, off at first: in the immersive mode the camera sits closer, with your character on the left.
+- An immersive camera: a closer camera with your character on the left.
 - Camera settings panel on F6.
-- New setting "Crosshair in immersive mode", at Show at first, can hide the dot of the game's crosshair in the immersive mode, except while you aim.
-- Enemy health bars have the look of your own bars: one colour, with the same texture.
-- The boss bar is one colour too.
-- Combat text: the damage numbers over enemies are white, bigger and in the HUD font, and a critical hit is gold with a pop.
-- The status words (Poison, Burning, Bleed, Slowed, Immune) are in the HUD font, each in its own colour.
-- The numbers for mining and cutting trees no longer have a band behind them.
-- New editor element "Status notices (cosy, sheltered)": move, size and hide the notice for coming home or standing under a roof.
-- Three new rows in the editor: "Other big notices", "Hunger, thirst and rest warning" and "Tutorial tips".
-- The editor shows the notice of the selected row at its place, with a sample text.
-- New map setting "Player name" (F8) hides your own name on RuneMap and the big map (M), from an idea and first code by Taylor Powell (tcpowell).
-- New switch "Spell cooldowns: horizontal" in the editor (F9) puts the spell cooldown tiles in a row.
-- Party panel: the health of your friends shows at the top left, under your bars, when you play with friends.
+- A "Crosshair in immersive mode" setting that can hide the crosshair dot.
+- A party panel with the health of your friends in co-op.
+- A switch to put the spell cooldown tiles in a row.
+- A "Player name" map setting, from the idea and first code of Taylor Powell (tcpowell).
+- An editor part for the cosy and sheltered notices.
+- Editor parts for other big notices, the hunger, thirst and rest warning, and tutorial tips.
+- The editor shows a sample of the selected notice in its place.
 
 ### Changed
 
-- The editor (F9), map settings (F8) and camera settings (F6) panels now name the keys of the other panels at the top right.
-- The spell cooldown tiles start lower on the left, to make room for the party panel.
-- The licence now says how to send a change by pull request, and that a fork may not be published as a mod.
+- Redesign of the enemy health bars.
+- Redesign of the boss bar.
+- Redesign of the combat text.
+- Redesign of the status words, such as Poison and Burning.
+- Redesign of the mining and woodcutting numbers.
+- The F9, F8 and F6 panels show the keys of the other panels.
+- The spell cooldown tiles start lower, to make room for the party panel.
+- The licence explains how to send a change by pull request.
+- The licence forbids the publication of a fork as a mod.
 
 ### Fixed
 
-- Slim level up: the row for a finished level up no longer comes back under the bars after you open and close F9.
-- Slim level up: the row now changes size softly, not in one jump, when a level up comes over an XP notice and when the XP notice returns.
-- The editor panel (F9) no longer moves up and down while you go through the list.
-- The pictures now load on computers where they did not, for example after an install with Vortex, and a lower case scripts folder works.
+- A finished level up no longer returns under the bars after you close F9.
+- The level up row no longer jumps in size when it meets an XP notice.
+- The editor panel (F9) no longer jumps while you scroll the list.
+- Pictures no longer fail to load on some computers, for example after a Vortex install.
+- The mod works with a lower case scripts folder.
 
 ## [1.7] - 2026-10-04
 
-1.7 adds a quest tracker, a slim level up under the bars and a gold compass. It also lets you pick what stays for direction in the immersive mode.
-
 ### Added
 
-- Quest tracker under the minimap at the top right, showing the main quest and the quest that you track in the journal.
-- Slim level up: a new level shows under the bars, in place of the game's big banner in the middle of the screen.
-- "Show next steps" switch for the quest tracker: it shows up to three steps after the current one.
-- New map setting "In immersive mode" (F8) picks what stays in the immersive mode: Nothing, Map or Compass.
-- Compass, gold style: the game's compass gets the gold of the mod.
-- Compass marks: while the map is hidden, the compass shows the creatures, ore, herbs, rune essence and rare trees switched on in the map settings (F8).
+- A quest tracker under the minimap with the main quest and your tracked quest.
+- A slim level up notice under the bars, in place of the game's banner.
+- A quest tracker switch to show up to three next steps.
+- A map setting to keep the map or the compass in immersive mode.
+- Compass marks for creatures and resources while the map is hidden.
 
 ### Changed
 
-- Map settings (F8): a row with more than two values shows its value between < and >.
-- Immersive mode: stamina that is not full no longer brings the bars back.
-- Immersive mode: a debuff shows for as long as it lasts, and a good buff (Cosiness, Sheltered, Well Rested, Prayer) shows when you get it, then fades.
-- The time of day icon of the immersive mode is off and gone from the editor list.
-- New licence: still free to use and open to read, but reuploads, published changed versions and reuse in other mods need permission; versions 1.0 to 1.6 stay MIT.
+- Redesign of the compass.
+- Map settings (F8) show the value of a row between < and >.
+- In immersive mode, stamina that is not full no longer brings back the bars.
+- In immersive mode, a debuff shows while it lasts and a buff shows briefly.
+- A new licence: still free to use, but reuploads, changed versions and reuse need permission.
+- Versions 1.0 to 1.6 stay under the MIT licence.
+
+### Removed
+
+- The time of day icon of immersive mode.
 
 ### Fixed
 
-- The compass no longer loses its strip with the letters when it is hidden at the start of a world and shown later.
-- A thin pale line no longer shows in the buff row between two buffs after one ends.
-- A buff without a timer, for example the weight icon after a death, no longer stays in the buff row after it ends.
+- The compass no longer loses its letters when it shows after a hidden start.
+- A thin pale line no longer stays in the buff row after a buff ends.
+- A buff without a timer, like the weight icon, no longer stays after it ends.
 
 ## [1.6] - 2026-10-03
 
 ### Added
 
-- Rune XP: the XP that you get shows under the bars, with the icon and the name of the skill.
+- Rune XP: your XP gains show under the bars, with the skill's icon.
 
 ### Changed
 
-- Elements in the editor have clearer names, for example "Menu shortcuts", "Picked-up items", "Interaction prompts", "Arrow and rune count", "XP circle" and "Minimap (RuneMap)".
+- Clearer names for the parts in the editor.
 
 ### Fixed
 
 - A gamepad moves between the bag and the tool bar again.
-- The menu buttons (chat, map, spell book, building, bag) now show the gamepad buttons, not the keyboard keys, when you play with a gamepad.
-- The bright edge of the tool bar now stays on the slot of the item in your hand when you change the item with a key or the tool wheel.
-- The gold edges of the tool bar slots no longer stay on the screen while the tool wheel is open.
-- In the editor, the gold edges of the tool bar slots now dim with the tool bar.
+- The menu buttons show gamepad buttons, not keyboard keys, when you play with a gamepad.
+- The tool bar highlight no longer stays on the wrong slot after you change items.
+- The tool bar's gold edges no longer show while the tool wheel is open.
+- In the editor, the tool bar's gold edges now dim with the bar.
 
 ## [1.5] - 2026-10-03
 
-1.5 is a big patch of the HUD look: the item pick-ups, the quests, the tool bar, the buffs, the farm plots and RuneMap. It also adds a page in Mod Menu and two new elements in the editor.
-
 ### Added
 
-- Rune UI has a page in Mod Menu, for players who have it: press Esc, then MODS.
-- The tool bar has the look of the cooldown tiles: see-through slots with a thin gold edge.
-- Food and potion buffs are rings like the drink buff: green for a food, gold for a potion.
-- In the editor, "Drink buff" is now "Drink, food and potion buffs" and moves all of them.
-- New editor element "Item pick-ups": move, resize or hide the list of picked-up items on its own, apart from "Notifications".
-- The rows of the pick-up list have the look of the HUD: no dark band, no gold lines, the HUD font and the count in gold.
-- The row of a new item has the look of the other rows with no sparks, and "NEW MATERIAL !" is light from the start and does not blink.
-- The quests and unlocks have the HUD font, with a shadow on the letters, as the item pick-ups.
-- The farm plots: the water and compost icons over a plot are half their size.
-- The clearing panel of a farm plot has no dark band or frame, a smaller title with a shadow, and a brown bar in place of the red one.
-- New editor element "Death screen": move it or make it smaller.
-
-### Fixed
-
-- The editor panel and the map settings panel now show the keys that you set in `runeui.txt`.
-- The lock-on diamond now sits in the middle of the staff's target mark, not a few pixels right and below.
-- The sample tiles of the spell cooldowns no longer show while the map settings (F8) are open.
-- A buff that ended, such as poison, no longer stays on the screen with an empty bar.
-- The drink, food and potion buffs are no longer cut at the edge of their lists when you move them far from the food, water and rest rings.
-- A claimed bed roll now shows its name with a space: "Ann's Bed Roll", and a bed shows "Ann's Bed".
-- The F9 and F8 panel no longer stays empty after an error, and `UE4SS.log` shows each different error once in each world.
+- A Rune UI page in Mod Menu, for players who have Mod Menu.
+- An editor part for the item pick-ups, apart from the notifications.
+- An editor part for the death screen.
 
 ### Changed
 
-- The frame of "Quests" in the editor now has the width of the panel, 440, not 240.
-- The quests and unlocks now stay at the right edge, at the size of the game, and "Quests" in the editor moves only up and down.
-- The line under the bars is now the pointed gold line of the loading screen, and the `[menuart]` part of `runeui.txt` is no longer used.
-- Buffs are no longer rings: each buff is its icon with a thin bar under it that shows the time that is left.
-- RuneMap: the rare trees are now a violet triangle, not a gold one.
-- RuneMap: the time of day is now a gold arrow between the two gold rings.
-- RuneMap: the north mark is a bigger gold arrow with the N cut into it, and the three diamonds on the ring are a little bigger.
-- The mod no longer searches all widgets of the game every 10 seconds, which caused a hitch even when you stood still.
-- With an older UE4SS ("timed search" in the log), the search after you enter a world or respawn now stops when all HUD parts are found.
+- Redesign of the tool bar.
+- Redesign of the buffs.
+- Redesign of the food and potion buffs, to match the drink buff.
+- Redesign of the item pick-up list.
+- Redesign of the quest and unlock notices.
+- Redesign of the farm plot icons and clearing panel.
+- Redesign of the Rune Map rare tree mark, time of day arrow and north mark.
+- The line under the bars is the gold line of the loading screen.
+- The editor part "Drink buff" moves the food and potion buffs too.
+- The editor frame of Quests has the width of the panel.
+- Quests and unlocks stay at the right edge and move only up and down.
+
+### Removed
+
+- The `[menuart]` part of `runeui.txt`.
+
+### Fixed
+
+- The game no longer hitches every 10 seconds, even while you stand still.
+- The F9 and F8 panels now show the keys you set in `runeui.txt`.
+- The F9 and F8 panels no longer stay empty after an error.
+- `UE4SS.log` shows each different error once in each world.
+- The lock-on diamond no longer sits off the centre of the staff's target mark.
+- The sample spell cooldown tiles no longer show while the map settings (F8) are open.
+- An ended buff, such as poison, no longer stays with an empty bar.
+- Drink, food and potion buffs are no longer cut off when you move them far.
+- The name of a claimed bed no longer misses a space: "Ann's Bed Roll".
 
 ## [1.4] - 2026-10-01
 
-1.4 is the first release since 1.2 and also holds everything in 1.3. Its own changes are one settings file, keys that you can change and an error line in the panels.
-
 ### Added
 
-- One settings file, `runeui.txt`, next to the game, with named values you can read and edit; older settings files are read once.
-- Five keys can be changed in the `[keys]` part of `runeui.txt`: F9, F8, F7, ] and [.
-- When a part of the mod fails, the F9 and F8 panel shows a line with its name and points at `UE4SS.log`.
-
-## [1.3] - released as part of 1.4
-
-### Added
-
-- A new F9 editor in the look of the game's bag panel, with a small map of the screen and a list that groups the parts by area.
-- A gold diamond marks a part that you moved, resized or faded, and X and Y show next to the size and the opacity.
-- Gold corners and a dark tag with the name, X and Y mark the selected part, in place of the pale gold box and the blink.
-- The panel stays on one side of the screen and moves only when it would cover the selected part.
-- Hold an arrow key to keep moving a part.
-- Three layout profiles: while F9 is open, F7 saves the profile and goes to the next one.
-- A time of day icon right of the tool bar in the immersive mode: a sun by day, half a sun at dawn and dusk, the moon at night.
-- The staff's ring around a target is now a gold diamond, every time.
-- The rune and arrow count is a small dark disk with a gold rim, with the game's icon inside and the count in white right of it.
-- A rune icon has the colour of its rune: red for fire, blue for water, white for air, brown for earth.
-- The name of the ammo shows left of the count: for runes for 4 seconds after you change the ammo, for arrows all the time.
-- The drink buff is a blue ring, the same size as the other buff rings and level with the food, water and rest rings.
+- One settings file, `runeui.txt`, next to the game, that you can read and edit.
+- Settings from older files carry over once.
+- Five keys that you can change in the `[keys]` part of `runeui.txt`.
+- The F9 and F8 panels name a part that fails and point to `UE4SS.log`.
+- The editor marks a part that you moved, resized or faded.
+- The editor shows the X and Y of a part.
+- A held arrow key keeps moving a part.
+- Three layout profiles.
+- A time of day icon in immersive mode.
+- Each rune icon has the colour of its rune.
+- The ammo name shows next to the count.
 
 ### Changed
 
-- The pick-up prompt, the build panel and the repair mode have white words with a shadow on the letters, in place of the gold words of 1.2.
-- The faint dark shape behind the title of the build panel is gone.
+- Redesign of the F9 editor, with a screen map and parts grouped by area.
+- Redesign of the F8 map settings panel.
+- Redesign of the rune and arrow count.
+- Redesign of the drink buff.
+- The editor panel moves aside only when it would cover the selected part.
+- The staff's target ring is always a gold diamond.
+- White text with a shadow on the pick-up prompt, build panel and repair mode.
 - The keys under the menu buttons are white.
-- F8, the map settings, uses the new panel.
 - The overeating icon is in the middle of its ring.
+
+### Removed
+
+- The dark shape behind the build panel title.
 
 ## [1.2] - 2026-09-30
 
-1.2 is the first release since 1.0.1. It also holds everything in 1.1, which was not released on its own.
-
 ### Added
 
-- Wide screens: on 21:9 and wider screens, every part of the HUD stays in its place.
-- The HUD scale of the game: every part keeps its place when you change the HUD scale in the game's settings.
-- A layout keeps its shape on a screen of another shape, and each part follows the screen edge that it is nearest to.
-- Gold aim marks for the bow, the staff and the lock-on, which "Gold aim and lock-on" in F9 switches off.
-- A gold diamond replaces the lock-on orb.
-- Spell cooldowns: while a spell recovers, a see-through tile shows its icon, a rising gold fill and the seconds that are left.
-- Immersive mode, switched on in F9 with "Immersive mode (fades when idle)": the HUD fades when nothing goes on, and each part returns when it matters.
-- Ore, herbs, rune essence and rare trees on RuneMap, each with its own shape.
-- The menu buttons (chat, map, spell book, building, bag) are rings in the style of the food, water and rest rings, with the key under each one.
-- The bag's ring fills with the weight of your bag and turns red when the bag is almost full.
-- Gold letters on the pick-up prompt: the name of the thing in front of you and the action, for example "Collect".
+- Support for 21:9 and wider screens.
+- Support for the game's HUD scale setting.
+- A layout keeps its shape on a screen of another shape.
+- Gold aim marks for the bow, the staff and the lock-on.
+- Spell cooldown tiles that show the seconds left.
+- Immersive mode: the HUD fades when nothing happens.
+- Ore, herbs, rune essence and rare trees on Rune Map.
+- The bag's ring shows the weight of your bag and turns red near full.
+- Rune Map settings panel on F8.
+- Opacity for each part in the editor.
 
 ### Changed
 
-- Buffs are rings, like the food, water and rest rings, in the colour of the buff.
-- The bars have one colour each and a stronger texture.
-- The dark shadow behind the bars is gone.
+- Redesign of the buffs.
+- Redesign of the bars.
+- Redesign of the menu buttons.
+- Redesign of the pick-up prompt.
+- Redesign of the F9 and F8 panels.
+- A gold diamond replaces the lock-on orb.
 - The health bar shows no numbers.
-- Each step of the mod takes less time: 0.6 ms on average, down from 0.9 ms.
-- Creatures on RuneMap: the mod looks for creatures only around you, and not at all when Creatures is off.
-- The Creatures switch in F8 has three steps: all, enemies only (the new default) and off.
+- The mod is lighter.
+- The Rune Map Creatures setting can show enemies only.
+- The F9 and F8 panels open each other.
+- Rune Map shows while F8 is open, also when it is hidden.
+- An old layout from a wide screen can move a little once.
 
 ### Fixed
 
-- RuneMap no longer gets slower each time you open the big map (M).
-- A small hitch every 2 seconds is gone, because the mod now searches for the parts of the HUD much less often.
-- On a wide screen, the level badge and the line under the bars are no longer far away from the bars.
-
-A layout that you made on a wide screen with an older version can move a little once. Correct it in F9.
-
-## [1.1] - released as part of 1.2
-
-### Added
-
-- F8 opens the RuneMap settings in a panel under the map: "Faces north", "North mark", "Creatures", "Zoom" and "Drawing".
-- Opacity for each element in F9, in steps of 10% from 100% to 20%, set with comma and period.
-
-### Changed
-
-- The F9 and F8 panels have a dark background with a double gold line, like the inventory of the game.
-- The key list of F9 shows F8, and F9 and F8 each open the other panel.
-- While F8 is open, RuneMap shows, also when it is hidden in F9.
+- Rune Map no longer gets slower each time you open the big map (M).
+- The game no longer hitches every 2 seconds.
+- On a wide screen, the level badge and bar line no longer drift away.
 
 ## [1.0.1] - 2026-09-28
 
-- Fixed heavy stutter, worst on older UE4SS builds.
-- Fixed crashes after using the F9 editor for a while.
-- Hiding RuneMap now also hides its gold rings, and gives back the FPS the map costs.
-- RuneMap now draws every second frame, for about 10 FPS more.
-- If UE4SS.log says "timer: old UE4SS", update UE4SS to the latest experimental build.
+### Changed
+
+- A hidden Rune Map no longer costs FPS.
+- Rune Map is lighter, for about 10 more FPS.
+
+### Fixed
+
+- The game no longer stutters heavily, worst on older UE4SS builds.
+- The game no longer crashes after you use the F9 editor for a while.
+- A hidden Rune Map no longer leaves its gold rings on the screen.
 
 ## [1.0] - 2026-09-28
 
-The first release.
+### Added
 
-- F9 opens an editor that moves, resizes and hides 27 parts of the HUD and saves the layout.
-- RuneMap: a round minimap that turns with the camera, with a gold ring that is also a clock and diamonds for enemies and animals.
-- Food, water and rest: three rings in the style of the map that turn orange and red when a value is low.
-- Clean bars: health on top, stamina in green, and a plain dark track behind each bar.
-- Round buffs: a ring of dashes shows the time that is left, in the colour of the buff.
-- Ammo counter: the rune and arrow count of the staff and the bow moves away from the crosshair.
+- An editor on F9 that moves, resizes and hides 27 parts of the HUD.
+- Rune Map, a round minimap that turns with the camera.
+- Rune Map marks enemies and animals, and its ring is a clock.
+- Food, water and rest rings that warn when a value is low.
+- Clean health and stamina bars.
+- Round buffs that show the time left.
+- The rune and arrow count moves away from the crosshair.

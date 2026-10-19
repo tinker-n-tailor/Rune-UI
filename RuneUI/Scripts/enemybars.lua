@@ -9,7 +9,11 @@
 -- player's bars (bars.lua, ctx.Noise) and the width fix below. The classes may not be loaded until
 -- the first creature is near, so a missing object is asked for again on the next scan and costs no try. The game frees
 -- a bar when its creature goes, so Handled keeps only the bars that are still listed.
--- main.lua loads this file with pcall and runs its Scan; there is no switch, as for the player's bars.
+-- The Rune Skin switch "Enemy health bars" (elements.lua "enemybars", on at first) shows the bars or not. Off, each bar
+-- is see-through: its opacity, not its visibility, as the game shows and hides a bar by its visibility. On again, a
+-- bar gets its opacity back. A bar is made when its creature loads, long before it shows, so a look at each scan is in
+-- time.
+-- main.lua loads this file with pcall and runs its Scan.
 
 local M = {}
 
@@ -168,14 +172,28 @@ local function Handle(ctx, W, key)
     return true
 end
 
+-- a bar's full name -> its opacity before the switch made it see-through
+local Faded = {}
+local function Show(W, key, on)
+    if on then
+        if Faded[key] ~= nil then W:SetRenderOpacity(Faded[key]) Faded[key] = nil end
+        return
+    end
+    local o = W:GetRenderOpacity()
+    if Faded[key] == nil then Faded[key] = o end
+    if o > 0 then W:SetRenderOpacity(0) end
+end
+
 local function DressAll(ctx)
     local step = Steps.Widgets
     local live = {}
+    local on = ctx.On == nil or ctx.On() ~= false
     for _, class in ipairs(WIDGETS) do
         local list, keys = ctx.Find(class)
         for i, W in ipairs(list) do
             local key = keys[i]
             live[key] = true
+            pcall(Show, W, key, on)
             if ctx.MayTry(step) then
                 local ok, done = pcall(Handle, ctx, W, key)
                 if ok and done and not step.Logged then step.Logged = true ctx.Log("enemy bars: the first bar dressed (" .. class .. ")") end
@@ -187,6 +205,7 @@ local function DressAll(ctx)
         end
     end
     for key in pairs(Handled) do if not live[key] then Handled[key] = nil end end
+    for key in pairs(Faded) do if not live[key] then Faded[key] = nil end end
 end
 
 -- Once per widget scan (main.lua). Not at the main menu: the classes are not loaded there, and a look for an object
@@ -199,10 +218,12 @@ function M.Scan(ctx)
     DressAll(ctx)
 end
 
--- a new world or a player restart: a blueprint class can load again at a new address, so everything is written again
-function M.Forget()
+-- a new world or a player restart: a blueprint class can load again at a new address, so everything is written again.
+-- A respawn (the same world) keeps Faded: the bars it made see-through are still there.
+function M.Forget(sameWorld)
     for _, step in pairs(Steps) do step.Done, step.Logged, step.Fails, step.RetryAt = nil, nil, 0, 0 end
     Handled = {}
+    if not sameWorld then Faded = {} end
 end
 
 -- for the F9 panel's warning line: one of the builds gave up (see MayTry)

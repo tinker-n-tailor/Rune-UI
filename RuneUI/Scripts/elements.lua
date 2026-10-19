@@ -52,8 +52,9 @@ local Elements = {
     -- no widget of its own either: showing it shows the game's icons beside the bars (hidden at first)
     { Id="baricons", Name="Game icons beside the bars",     Custom="baricons",
       A={0,0}, Center={X=110, Y=60}, Size={X=30, Y=70} },
-    -- no widget of its own either: showing it shows the game's numbers on the health bar (unseen at first)
-    { Id="barnumbers", Name="Health numbers",               Custom="barnumbers",
+    -- no widget of its own either: showing it shows the numbers on the health bar (the game's) and the
+    -- stamina bar (staminatext.lua; unseen at first)
+    { Id="barnumbers", Name="Bar numbers",                  Custom="barnumbers",
       A={0,0}, Center={X=290, Y=45}, Size={X=80, Y=20} },
     -- no widget of its own either: shown, the HUD fades when nothing happens (immersive.lua; off at first). The F6
     -- panel switches it and sets its Wait.
@@ -98,6 +99,9 @@ local Elements = {
     -- no widget of its own: shown, the game's XP floats over a hit enemy (game 1.0.1); hidden, it does not (xpfloat.lua).
     -- Off at first: the XP under the bars shows it.
     { Id="floatxp",  Name="Floating XP",                    Custom="floatxp",
+      A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
+    -- no widget of its own: shown, the health bars over enemies show; hidden, they do not (enemybars.lua). On at first.
+    { Id="enemybars", Name="Enemy health bars",             Custom="enemybars",
       A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
     -- Idle: its render opacity when no notice shows, 0 (README, the slim level up). The slim row reads any opacity above 0.02 as a notice.
     { Id="levelup",  Name="Level up notice",                      Classes={"WBP_LevelUpNotification_C"}, Idle=0,

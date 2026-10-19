@@ -1,7 +1,7 @@
 -- The ammo counter: a small dark disk with a gold rim holding the game's own rune or arrow icon, the count right of
--- it in white with a shadow, and the ammo's name left of it. The game shows the name above and only for a moment. A
--- rune's colour tells it, so its name shows a few seconds after a switch; the arrows share one icon, so the bow's name
--- stays.
+-- it in white with a shadow, and the ammo's name left of it. The game shows the name above and only for a moment.
+-- Ours shows a few seconds after a switch, for runes and arrows alike: a player wanted the arrow name gone too
+-- (Nexus, 16-10-2026), though the arrows share one icon.
 -- The game's ammo box is VerticalBox_0 of WBP_ReticleMagic_C (the staff) and WBP_ReticleRangedADS_C (the bow);
 -- apply.lua moves it as "ammo". It holds AmmoItemName ("Fire Rune"), then CounterBox with the count and Icon
 -- (probe of 01-10-2026; the staff's count sits inside Overlay_0). Ours goes at the end of the box; the game's name
@@ -27,6 +27,9 @@ local function Obj(path) return StaticFindObject(path) end
 local function New(cls, outer, name) return StaticConstructObject(Obj("/Script/UMG." .. cls), outer, FName(name)) end
 
 M.Built, M.Builds = {}, 0   -- box full name -> { Box, Count (game's text), Icon (game's image), Img, Text, Said, Tex }
+-- a new ammo picture, name or count counts one: the immersive mode shows the counter for its wait (immersive.lua). The
+-- count is there for the staff: the game has no aim for it, so a cast shows the counter by the rune it spends.
+M.Changes = 0
 -- box full name -> the game's counter, icon and name, once taken out of the box: a player restart keeps the box, and a
 -- build after it finds them here. Not emptied with the world: a new world's boxes have new names.
 M.Parts = {}
@@ -106,10 +109,11 @@ end
 local function Update(b)
     local ok, s = pcall(function() return b.Count:GetText():ToString() end)
     -- an empty count is the game loading a weapon's ammo: the last one stays, or the icon shows alone (seen in the game, 01-10-2026)
-    if ok and s ~= "" and s ~= b.Said then b.Said = s b.Text:SetText(FText(s)) end
+    if ok and s ~= "" and s ~= b.Said then b.Said = s b.Text:SetText(FText(s)) M.Changes = M.Changes + 1 end
     local tex = b.Icon.Brush.ResourceObject
     if tex and tex:IsValid() and tex:GetAddress() ~= b.Tex then
         b.Tex = tex:GetAddress()
+        M.Changes = M.Changes + 1
         b.Img:SetBrushFromTexture(tex, false)
         local br = b.Img.Brush
         local size = b.Bow and ICON_BOW or ICON
@@ -124,10 +128,11 @@ local function Update(b)
         local okN, nm = pcall(function() return b.Name:GetText():ToString() end)
         if okN and nm ~= b.NameSaid then
             b.NameSaid, b.Until = nm, os.clock() + NAME_HOLD
+            M.Changes = M.Changes + 1
             b.Label:SetText(FText(nm))
         end
     end
-    local show = (b.Bow or os.clock() < b.Until) and 1 or 0
+    local show = os.clock() < b.Until and 1 or 0
     if show ~= b.Shown then b.Shown = show b.Label:SetRenderOpacity(show) end
 end
 

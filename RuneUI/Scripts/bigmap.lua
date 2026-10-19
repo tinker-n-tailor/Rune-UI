@@ -10,7 +10,8 @@
 --     the game's own pointer shows, as on the rest of the map. SetCursor with the default gave the Windows arrow.
 --   - The big map's zoom is the zoom of the player's own map view (the component MapView of the pawn; RuneMap has a
 --     view of its own). The game sets it to 3 when the map opens, the wheel moves it a little at a notch, and 20
---     shows the whole map. The mod snaps it to three levels, one level a notch: close, the zone, the whole map.
+--     shows the whole map. The mod snaps it to three levels, one level a notch or a push of the gamepad's stick:
+--     close, the zone, the whole map.
 -- What the mod does to a quest area: the circle goes faint, the mouse goes through it, and its middle gets a shield,
 -- gold for the main quest, blue for a side quest and green for a task of the main quest. The shield is the map plugin's own icon, as RuneMap's creature
 -- icons are, so every map draws it at the right place. One actor can own the circles of many areas (the game's
@@ -287,6 +288,11 @@ local Level, Last = 1, nil
 local Chain = { Name = "big map zoom" }
 local FAST_FOR = 5       -- seconds after a move of the zoom in which it is read about every frame
 local FastUntil = 0
+-- A gamepad zooms with the right stick, an axis (IMC_Map): held, it moves the zoom a little at every frame, and each
+-- move was a level, so one push went from close to the whole map. With a gamepad, a move this soon after the last
+-- one is the same push and keeps the level.
+local PUSH_GAP = 0.25
+local Pad, PushAt = false, nil
 
 local function FindView(ctx, now)
     if Alive(View) or now < NextView then return end
@@ -306,10 +312,18 @@ local function Snap()
     local z = View:GetZoomScale()
     if Last == nil then Last = z return false end
     if math.abs(z - Last) < 0.001 then return false end
+    local now = os.clock()
+    FastUntil = now + FAST_FOR
+    local start = z <= M.LEVELS[1] + 0.001   -- the map opened, or the zoom went under close: no push of the stick
+    if Pad and PushAt and now - PushAt < PUSH_GAP and not start then
+        PushAt = now
+        View:SetZoomScale(Last)
+        return true
+    end
     Level = M.NextLevel(Level, Last, z)
     Last = M.LEVELS[Level]
     if math.abs(z - Last) >= 0.001 then View:SetZoomScale(Last) end
-    FastUntil = os.clock() + FAST_FOR
+    PushAt = (Pad and not start) and now or nil
     return true
 end
 
@@ -324,6 +338,8 @@ function M.Tick(ctx)
         SyncShields(ctx)
     end
     FindView(ctx, now)
+    local okPad, pad = pcall(ctx.Pad or function() return false end)
+    Pad = okPad and pad == true
     local ok, moved = pcall(Snap)
     -- the wheel turns on: the next notches are read about every frame, so no half step shows
     if ok and moved and ctx.Chain then ctx.Chain.Run(Chain, ctx, 16, FastStep, FastMore) end
@@ -337,7 +353,7 @@ function M.Forget(sameWorld)
     end
     Areas, Shields, Ours, Waiting = {}, {}, {}, {}
     Kinds, KindsFound = {}, 0
-    View, Last, Level, FastUntil = nil, nil, 1, 0
+    View, Last, Level, FastUntil, PushAt = nil, nil, 1, 0, nil
     NextLook, NextShields, NextScan, NextView, Logged, Scans = 0, 0, 0, 0, 0, 0
     Chain.Token, Chain.Time = (Chain.Token or 0) + 1, nil   -- a call still queued does nothing (chain.lua's Stop)
 end

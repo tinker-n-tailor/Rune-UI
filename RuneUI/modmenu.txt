@@ -37,6 +37,8 @@
       "tooltip": "On: the XP shows under the bars, and the gold line fills as the XP bar. Off: the game's XP circle. Each layout profile has its own." },
     { "key": "floating_xp", "type": "toggle", "label": "Floating XP", "default": false,
       "tooltip": "On: the game's XP floats over a hit enemy. Off: it does not show. Each layout profile has its own." },
+    { "key": "enemy_bars", "type": "toggle", "label": "Enemy health bars", "default": true,
+      "tooltip": "On: health bars show over enemies. Off: they do not show. Each layout profile has its own." },
     { "key": "slim_level_up", "type": "toggle", "label": "Small level up notice", "default": true,
       "tooltip": "On: a level up shows under the bars, in the place of the XP, and the game's big banner is unseen. Off: the game's banner. It is also off while XP under the bars is off. Each layout profile has its own." },
     { "key": "gold_crosshair", "type": "toggle", "label": "Gold crosshair and lock-on", "default": true,
@@ -45,8 +47,8 @@
       "tooltip": "On: the day and night dial is a sun and moon icon: half a sun at dawn and dusk, the sun by day, the moon at night. Off: the game's own dial. The dial shows only when you show it in the layout editor. Each layout profile has its own." },
     { "key": "bar_icons", "type": "toggle", "label": "Game icons beside the bars", "default": false,
       "tooltip": "On: the game's icons show beside the bars. Each layout profile has its own." },
-    { "key": "health_numbers", "type": "toggle", "label": "Health numbers", "default": false,
-      "tooltip": "On: the game's numbers show on the health bar. Each layout profile has its own." },
+    { "key": "health_numbers", "type": "toggle", "label": "Bar numbers", "default": false,
+      "tooltip": "On: numbers show on the health and stamina bars. Each layout profile has its own." },
     { "key": "horizontal_cooldowns", "type": "toggle", "label": "Spell cooldowns in a row", "default": false,
       "tooltip": "On: the spell cooldown tiles are in a row from left to right, the newest at the right end, instead of one column. The left end of the box stays where it is, so a saved position stays. Each layout profile has its own." },
 
@@ -81,7 +83,7 @@
       "tooltip": "The HUD fades when nothing happens, and comes back when something does. Each layout profile has its own." },
     { "key": "immersive_wait", "type": "slider", "label": "Wait before the fade", "min": 3, "max": 30, "step": 1, "default": 8, "suffix": " s",
       "tooltip": "Seconds without anything happening before the HUD fades." },
-    { "key": "camera_crosshair", "type": "choice", "label": "Crosshair in immersive mode", "options": ["Show", "Aim + tools", "Aim only", "Nothing"], "default": "Show",
+    { "key": "camera_crosshair", "type": "choice", "label": "Crosshair", "options": ["Show", "Aim + tools", "Aim only", "Nothing"], "default": "Show",
       "tooltip": "The dot. Show: always. Aim + tools: aim, tools. Aim only: aim. Nothing: never." },
 
     { "type": "header", "label": "Immersive camera" },

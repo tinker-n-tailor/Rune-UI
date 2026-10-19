@@ -1,6 +1,6 @@
--- The setting "Crosshair in immersive mode" (F6 and Mod Menu): Show, Aim + tools, Aim only or Nothing. While the
--- immersive mode is on, with or without the immersive camera, the dots of the game's crosshair are unseen as
--- camerarules' CrosshairHides says. Out of the immersive mode, and at Show, the game's crosshair stays as it is.
+-- The setting "Crosshair" (F6 and Mod Menu): Show, Aim + tools, Aim only or Nothing. In the immersive mode and out of
+-- it, with or without the immersive camera, the dots of the game's crosshair are unseen as camerarules'
+-- CrosshairHides says. At Show, the game's crosshair stays as it is.
 -- Aim only keeps the dot while you aim a bow or hold a staff: without the lock-on, it is the only aim of a cast or a
 -- bow shot. Aim + tools keeps it too while a tool is in a hand (camera.lua's Hands): a tree or a rock is hit where the
 -- dot is. Nothing hides the dot of an aim too. The bow's ring and stamina arc, the staff's ring and the lock-on mark
@@ -84,14 +84,14 @@ end
 
 function M.Forget() M.Marks, M.AimDots, M.Host, Logged = {}, {}, nil, {} end
 
-local SAY = { dots = "crosshair: the dot hidden in the immersive mode, kept while you aim", all = "crosshair: every dot hidden in the immersive mode" }
+local SAY = { dots = "crosshair: the dot hidden, kept while you aim", all = "crosshair: every dot hidden" }
 
 function M.Tick(ctx)
     local okH, right, left = pcall(function() if ctx.Hands then return ctx.Hands() end end)
     if not okH then Once(ctx, "hand", "crosshair: the hands not read: " .. tostring(right)) right, left = nil, nil end
     local okB, building = pcall(function() return ctx.Building and ctx.Building() end)
     if not okB then Once(ctx, "build", "crosshair: the build mode not read: " .. tostring(building)) building = false end
-    local hide = ctx.Rules.CrosshairHides(ctx.Immersive(), right, left, building)
+    local hide = ctx.Rules.CrosshairHides(right, left, building)
     if not hide then
         if M.Hidden then
             local ok, done = pcall(Restore, ctx)

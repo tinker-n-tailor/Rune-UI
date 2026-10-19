@@ -157,7 +157,7 @@ local function EnsureBlades()
         end
         -- each part as soon as its bars are there: a missing special bar must not stop the others
         if Blades.Bars[1] and Blades.Bars[2] then SwapRows() end
-        -- the numbers on the health bar follow the switch "Health numbers" (off at first): unseen, not collapsed, so the
+        -- the numbers on the health bar follow the switch "Bar numbers" (off at first): unseen, not collapsed, so the
         -- immersive mode still reads them (seen in the game, 30-09-2026)
         local numbers = ById("barnumbers").Visible == true and 1.0 or 0.0
         if Blades.Bars[2] and Survival and Blades.Numbers ~= numbers then

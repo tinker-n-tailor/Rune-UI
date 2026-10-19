@@ -219,6 +219,21 @@ function M.Hands()
     return Held(Comp.Equip.HeldEquipmentActorRight, "R"), Held(Comp.Equip.HeldEquipmentActorLeft, "L")
 end
 
+-- Whether the player draws a bow, for immersive.lua (the ammo counter): the game's own IsAiming on the character, read
+-- also while the camera is off. Not the reticle, as the zoom: the bow's and the staff's aim reticles show the whole time
+-- the weapon is in hand, and a staff never aims (probes of 19-10-2026). False before the camera's first step.
+-- named, so a pcall of it makes no closure (4 calls a second)
+local function PawnAims()
+    local pc = M.Ctx.Controller()
+    local pawn = pc and pc.Pawn
+    return Ok(pawn) and pawn:IsAiming()
+end
+function M.Aiming()
+    if not M.Ctx then return false end
+    local ok, aim = pcall(PawnAims)
+    return ok and aim == true
+end
+
 -- Whether the player is in the build mode, for crosshair.lua: the controller's BuildModeComponent (ADominionPlayerController)
 -- has CurrentBuildMode, an EBuildMode: 0 None, 1 Selection, 2 Placement, 3 RepairAndEdit (class dump of 14-10-2026).
 function M.Building()

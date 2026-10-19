@@ -4,14 +4,17 @@ Move, resize, fade and hide every part of the HUD, right in the game. With a new
 
 INSTALL
 
-The CurseForge app installs UE4SS 3.0.1, which does not start with the game. Use the newer build:
+The CurseForge app installs UE4SS 3.0.1, which does not start with the game. Use the newer build from Nexus:
 
-1. Go to the UE4SS experimental release on GitHub: https://github.com/UE4SS-RE/RE-UE4SS/releases/tag/experimental-latest
-2. Download the zip whose name starts with "UE4SS_v3.0.1-". Do not use the zDEV zip.
+1. Go to the files of UE4SS for RSDragonwilds on Nexus: https://www.nexusmods.com/runescapedragonwilds/mods/4?tab=files
+2. Download the file "UE4SS Steam (latest)". Do not use "UE4SS stable Steam": with Rune UI, the game crashes at the main menu.
 3. Open the game folder: Steam\steamapps\common\RSDragonwilds\RSDragonwilds\Binaries\Win64
-4. Copy dwmapi.dll and the ue4ss folder from the zip into Win64. Replace the old files.
+4. In the zip, open RSDragonwilds\Binaries\Win64. Copy dwmapi.dll and the ue4ss folder from there into Win64. Replace the old files.
 5. Copy the RuneUI folder into Win64\ue4ss\Mods. Keep the name RuneUI.
 6. Start the game and press F9. After a fresh install, a hint about F9 shows once, in the first world.
+
+The UE4SS experimental release on GitHub also works: https://github.com/UE4SS-RE/RE-UE4SS/releases/tag/experimental-latest
+Download the zip whose name starts with "UE4SS_v3.0.1-", not the zDEV zip. Its dwmapi.dll and ue4ss folder are at the top of the zip. Then do steps 3 to 6.
 
 Mods that change the HUD can conflict with Rune UI.
 
@@ -55,11 +58,12 @@ Wheels                                     Spell, item and emote wheels as rings
 Combat text                                Bigger damage numbers. On at first.
 XP under the bars                          XP bar under the bars. Off: the game's XP circle. On at first.
 Floating XP                                The game's XP over a hit enemy. Off at first.
+Enemy health bars                          The health bars over enemies. On at first.
 Small level up notice                      Level up under the bars. Off: the game's banner. On at first.
 Gold crosshair and lock-on                 Gold aim marks. On at first.
 Day and night icon                         The day and night dial as a sun and moon icon. Off: the game's dial. On at first.
 Game icons beside the bars                 Shows them. Off at first.
-Health numbers                             The game's numbers on the health bar. Off at first.
+Bar numbers                                Numbers on the health and stamina bars. Off at first.
 Spell cooldowns in a row                   Tiles in a row. Off at first.
 
 Rune Map                                   Off: no map.
@@ -74,7 +78,7 @@ Map refresh                                Every 2nd frame (at first). Every fra
 
 Immersive mode                             On: the HUD fades when nothing happens. Off at first.
 Wait before the fade                       3 to 30 s, 8 at first.
-Crosshair in immersive mode                Show (at first), Aim + tools (the dot while you aim, build or hold a tool), Aim only (the dot while you aim) or Nothing (no dot).
+Crosshair                                  Show (at first), Aim + tools (the dot while you aim, build or hold a tool), Aim only (the dot while you aim) or Nothing (no dot).
 Immersive camera                           On: a closer camera, with or without immersive mode. Off at first.
 Walk distance                              100 to 1500 cm, 300 at first.
 Side offset                                0 to 200 cm, 90 at first.

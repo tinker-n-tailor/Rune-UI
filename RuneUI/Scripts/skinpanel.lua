@@ -11,11 +11,12 @@ M.ROWS = {
     { Id = "combattext", On = "Bigger damage numbers. A critical hit is gold and pops.", Off = "The game's own damage numbers." },
     { Id = "runexp", On = "The XP shows under the bars.", Off = "The game's XP circle." },
     { Id = "floatxp", On = "The game's XP floats over a hit enemy.", Off = "No XP over a hit enemy." },
+    { Id = "enemybars", On = "Health bars show over enemies.", Off = "No health bars over enemies." },
     { Id = "slimlevel", On = "A level up shows under the bars. It needs XP under the bars.", Off = "The game's level up banner." },
     { Id = "aim", On = "The aim marks are gold, and the lock-on mark is a gold diamond.", Off = "The game's own crosshair and lock-on mark." },
     { Id = "dialskin", On = "The day and night dial is a sun and moon icon. Show it in Layout.", Off = "The game's own day and night dial." },
     { Id = "baricons", On = "The game's icons show beside the bars.", Off = "No icons beside the bars." },
-    { Id = "barnumbers", On = "The game's numbers show on the health bar.", Off = "No numbers on the health bar." },
+    { Id = "barnumbers", On = "Numbers show on the health and stamina bars.", Off = "No numbers on the bars." },
     { Id = "cdhoriz", On = "The cooldown tiles are in a row. Move them in Layout.", Off = "The cooldown tiles are in a column. Move them in Layout." },
 }
 

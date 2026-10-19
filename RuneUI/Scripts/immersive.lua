@@ -3,7 +3,7 @@
 -- debuff never fades). A food, water or rest ring shows while its need is in orange or red, and for a while when it
 -- fills; only the ring of that need. The menu buttons come back
 -- when a chat message comes, the quest tracker when a quest or its step changes, the party panel when a friend's
--- health goes down. The wheel stays away. RuneMap and the game's compass stay away too, unless the map setting
+-- health goes down, the ammo counter when the ammo changes and while you aim. The wheel stays away. RuneMap and the game's compass stay away too, unless the map setting
 -- "Keep in immersive mode" keeps one of them: Map keeps the map (and the quest tracker), Compass keeps the compass (M opens
 -- the big map). The tool bar never fades, because what matters can sit on it. Prompts, notifications, the area
 -- effects and warnings never fade either.
@@ -25,10 +25,10 @@ local function Hold(ctx) return ctx.Wait() end
 -- "Menu icons" (menuico) is not in it: that widget is the game's full-screen menu, not the icons in the corner
 -- (widget dump of 29-09-2026)
 local GROUP = { avatar = "bars", weapon = "bars", compass = "compass", wheel = "none", runemap = "none",
-    menubtn = "menu", questlist = "quest", party = "party" }
+    menubtn = "menu", questlist = "quest", party = "party", ammo = "ammo" }
 
 M.ErrorLogged = false   -- main.lua logs one failed step
-local Level = { bars = 1, menu = 1, quest = 1, party = 1, compass = 1, none = 1 }
+local Level = { bars = 1, menu = 1, quest = 1, party = 1, ammo = 1, compass = 1, none = 1 }
 local Until = {}
 local RingLevel, RingUntil, RingLast = {}, {}, {}
 -- What was last written, by slot (Stale, Wrote): the widget and the opacity, so a step that changes nothing makes no call.
@@ -39,7 +39,7 @@ local RowMem, RingMem, DrinkMem = {}, {}, {}
 local REASSERT = 0.25
 local NextReassert = 0
 local Texts = {}     -- by bar: { W = bar widget, List = its text widgets }
-local NextRead, LastTime, LastChat, LastQuest, LastHits = 0, nil, nil, nil, nil
+local NextRead, LastTime, LastChat, LastQuest, LastHits, LastAmmo = 0, nil, nil, nil, nil, nil
 -- the drink rings, by entry name: the game keeps spare drink entries and reuses them, so each one fades on its own
 -- (one watched entry left the shown one unseen, in game 01-10-2026)
 local DrinkLevel, DrinkUntil, DrinkLast = {}, {}, {}
@@ -57,12 +57,12 @@ end
 -- Leaving the world: drop the handles into it, and show everything for a moment in the new one
 function M.Forget()
     Texts, RowMem, RingMem, DrinkMem, RingLevel, RingUntil, RingLast = {}, {}, {}, {}, {}, {}, {}
-    LastChat, LastQuest, LastHits, NextReassert = nil, nil, nil, 0
+    LastChat, LastQuest, LastHits, LastAmmo, NextReassert = nil, nil, nil, nil, 0
     DrinkLevel, DrinkUntil, DrinkLast = {}, {}, {}
     BuffUntil, BuffSeen, BuffLevel, BuffApplied = ByEntry(), ByEntry(), ByEntry(), ByEntry()
     for g in pairs(Level) do Level[g] = 1 end
     local t = os.clock() + SHOW_AT_START
-    Until = { bars = t, buffs = t, menu = t, quest = t, party = t }
+    Until = { bars = t, buffs = t, menu = t, quest = t, party = t, ammo = t }
     for i = 1, 3 do RingUntil[i] = t end
 end
 M.Forget()
@@ -110,6 +110,11 @@ local function Read(ctx, now)
     local hits = ctx.PartyHits()
     if hits and LastHits and hits > LastHits then Until.party = now + Hold(ctx) end
     LastHits = hits
+    -- the ammo counter: a change (ammo.lua counts a new name, picture or count: a swap, a weapon taken, a shot or a
+    -- cast) brings it for the wait, and drawing a bow keeps it (camera.lua asks the game, also with its camera off)
+    local change = ctx.AmmoChange and ctx.AmmoChange()
+    if (change and change ~= LastAmmo) or (ctx.Aiming and ctx.Aiming()) then Until.ammo = now + Hold(ctx) end
+    LastAmmo = change
     -- a survival ring: low (orange or red, as survival.lua reads it from the game) keeps it, and a share that goes up
     -- (eating, drinking, sleeping) brings it for the wait
     for i, b in pairs(ctx.Rings()) do

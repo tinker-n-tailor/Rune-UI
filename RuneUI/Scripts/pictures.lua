@@ -16,10 +16,16 @@ local function Unbase64(s)
     local _, pad = string.gsub(string.sub(s, -2), "=", "")
     return string.sub(table.concat(out), 1, -1 - pad)
 end
+-- Lua cannot make a folder, so cmd's mkdir does, which needs backslashes. The Art folder can be missing: its only
+-- file in the zip is a readme, and a mod manager can leave it out (two players on Nexus, 18-10-2026).
+local function MakeArtFolder(Log, dir)
+    os.execute('mkdir "' .. string.gsub(dir .. "Art", "/", "\\") .. '" 2>nul')
+    Log("Art folder missing, making it")
+end
 local function WriteArt(LoadPart, Log, dir)
     local art = LoadPart("art")
     if not art then return end
-    local written = 0
+    local written, made = 0, false
     for name, text in pairs(art) do
         local file = dir .. "Art/" .. name
         local data = Unbase64(text)
@@ -28,6 +34,11 @@ local function WriteArt(LoadPart, Log, dir)
         if f then f:close() end
         if old ~= data then
             f = io.open(file, "wb")
+            if not f and not made then
+                made = true
+                MakeArtFolder(Log, dir)
+                f = io.open(file, "wb")
+            end
             if f then f:write(data) f:close() written = written + 1 else Log("cannot write " .. file) end
         end
     end

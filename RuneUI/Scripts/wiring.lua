@@ -57,6 +57,12 @@ function M.Build(H)
     if Avatar then Avatar.Init(Util) AddPart("avatar", Avatar, Util) end
     Bars = LoadPart("bars")
     if Bars then Bars.Init(Util) AddPart("bars", Bars, Util) end
+    local StaminaText = Bars and LoadPart("staminatext")   -- the number on the stamina bar, with the health numbers' switch
+    if StaminaText then
+        AddPart("stamina numbers", StaminaText, { Log = Log, Controller = Controller, MayTry = MayTry, Failed = Failed,
+            ClearOurs = ClearOurs, Uniq = Uniq, Bars = function() return Bars.Blades.Bars end,
+            On = function() return ById("barnumbers").Visible end })
+    end
     Buffs = LoadPart("buffs")
     -- the face of a buff is in its own file: without it the game's buffs stay
     if Buffs and not Util.BuffTime then
@@ -116,6 +122,8 @@ function M.Build(H)
         CompassStays = function() return RuneMap ~= nil and RuneMap.Set.Immersive == "Compass" end,
         -- the quest and step on show: a change brings the quest tracker back
         QuestSig = function() return QuestLook and QuestLook.Sig end,
+        -- a new ammo picture, name or count: a change brings the ammo counter back
+        AmmoChange = function() return Ammo and Ammo.Changes end,
         -- how many times a friend's health went down: a new one brings the party panel back
         PartyHits = function() return Party and Party.Hits end }
     if Survival then MenuButtons = LoadPart("menubuttons") end   -- it draws with survival.lua's ring
@@ -169,10 +177,11 @@ function M.Build(H)
         local P, Embers = LoadPart("pickups"), LoadPart("embers")   -- embers.lua: the new item sparks, for the pick-ups and the unlock rows
         if P then AddPart("pickups", P, { Log = Log, Find = FindClass, Font = FindPoppins, Embers = Embers }) end
         P = LoadPart("farmplot") if P then AddPart("farm plots", P, { Log = Log, Find = FindClass }) end
-        -- the enemy bars take the look of the player's bars; no switch, like the player's bars (enemybars.lua)
+        -- the enemy bars take the look of the player's bars, and show or not (the switch "enemybars", enemybars.lua)
         P = LoadPart("enemybars")
         if P then
             AddPart("enemy bars", P, { Log = Log, Find = FindQuiet, MayTry = MayTry, Failed = Failed, Noise = Bars and Bars.OneColorNoise,
+                On = function() return ById("enemybars").Visible end,
                 InWorld = function() local V = ById("vitals").Instances[1] return V ~= nil and V:IsValid() end })
         end
         P = LoadPart("combattext")
@@ -251,16 +260,15 @@ function M.Build(H)
         end
         P = LoadPart("bigmap")   -- the big map (M): faint quest areas with a shield, the plain pointer, three zoom levels
         if P then
-            AddPart("big map", P, { Log = Log, Find = FindQuiet, Controller = Controller, Chain = Util.Chain,
+            AddPart("big map", P, { Log = Log, Find = FindQuiet, Controller = Controller, Chain = Util.Chain, Pad = Apply.PadInUse,
                 Soon = ExecuteInGameThreadWithDelay, Arrived = MapName and SameMarkers or Finder.TakeArrivals,
                 SmallMap = function() return RuneMap and RuneMap.Map end })
         end
         P = LoadPart("pointer")   -- the mouse pointer: a gold arrow in place of the Windows arrow
         if P then AddPart("pointer", P, { Log = Log, Controller = Controller, Name = FName }) end
-        -- the crosshair setting: "immersive mode on" is its row in F6, the switch
-        local function ImmersiveOn() return ById("immersive").Visible end
         P = Camera and LoadPart("camera")
-        local CameraPart = P   -- crosshair.lua asks it what the right hand holds
+        local CameraPart = P   -- crosshair.lua asks it what the right hand holds, the immersive mode whether you aim
+        ImmersiveCtx.Aiming = P and P.Aiming
         if P then
             AddPart("camera", P, { Log = Log, Rules = Camera, Controller = Controller,
                 -- the HUD reticle: a bow's aim or a staff's cast starts the ranged zoom (camera.lua Aiming)
@@ -277,7 +285,7 @@ function M.Build(H)
                 end })
         end
         P = Camera and Aim and Aim.Collect and LoadPart("crosshair")
-        if P then AddPart("crosshair", P, { Log = Log, Rules = Camera, Immersive = ImmersiveOn, Reticle = AimCtx.Reticle, Collect = Aim.Collect,
+        if P then AddPart("crosshair", P, { Log = Log, Rules = Camera, Reticle = AimCtx.Reticle, Collect = Aim.Collect,
             Hands = CameraPart and CameraPart.Hands, Building = CameraPart and CameraPart.Building }) end
     end
     -- last of the parts that draw: the parts above may change what it fades, and ApplyAll reads its opacity after it

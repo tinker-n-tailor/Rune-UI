@@ -16,7 +16,7 @@ local M = {}
 -- Distances in the game's units, which are cm.
 M.ROWS = {
     -- "Aim only" was "Hide" in older files: an old file or Mod Menu value reads as "Aim only" (Old)
-    { Key = "crosshair", Label = "Crosshair in immersive mode", Kind = "choice", Options = { "Show", "Aim + tools", "Aim only", "Nothing" }, Default = "Show",
+    { Key = "crosshair", Label = "Crosshair", Kind = "choice", Options = { "Show", "Aim + tools", "Aim only", "Nothing" }, Default = "Show",
         Old = { hide = "Aim only" } },
     { Key = "on", Label = "Immersive camera", Kind = "switch", Default = false },
     { Key = "walk", Label = "Walk distance", Kind = "number", Min = 100, Max = 1500, Step = 25, Unit = "cm", Default = 300 },
@@ -163,7 +163,7 @@ function M.NewMemory() return { FightUntil = -1, FightView = nil, SprintUntil = 
 local MIN_DISTANCE, MAX_DISTANCE = BY_KEY.walk.Min, BY_KEY.walk.Max
 -- seconds: a glide; the glide back in after a sprint, slower, as a quick zoom right after a stop feels abrupt; the
 -- sprint view kept after the sprint signal drops, so a short break in a sprint does not pull the camera in and out
-M.GLIDE, M.GLIDE_FROM_SPRINT, M.SPRINT_HOLD = 0.6, 1.2, 0.5
+M.GLIDE, M.GLIDE_FROM_SPRINT, M.SPRINT_HOLD = 0.9, 1.6, 0.5
 
 -- s: Combat (the combat switch), Aiming (an aim reticle shows), Sprinting (the game's sprint signal), Right, Left (class
 -- names). now: seconds. Gives back Active false (the game's camera: every value goes back), or Active with Distance and
@@ -196,7 +196,8 @@ end
 
 -- A glide of the camera between two places, each a distance and a side: g holds FromA, FromY, ToA, ToY, Start, Secs.
 -- Glide starts a new one from (a, y) when the target changed, and gives back true then; GlideAt gives the place at now
--- on a smooth curve, and true once it is there.
+-- on an ease-out curve, and true once it is there: the camera answers at once and settles softly (players found the
+-- old changes abrupt, Nexus 14-10-2026).
 function M.Glide(g, toA, toY, secs, now, a, y)
     if g.ToA == toA and g.ToY == toY then return false end
     g.FromA, g.FromY, g.ToA, g.ToY, g.Start, g.Secs = a, y, toA, toY, now, secs
@@ -206,19 +207,20 @@ function M.GlideAt(g, now)
     local k = g.Secs > 0 and (now - g.Start) / g.Secs or 1
     if k >= 1 then return g.ToA, g.ToY, true end
     if k < 0 then k = 0 end
-    local e = k * k * (3 - 2 * k)
+    local e = 1 - (1 - k) ^ 3
     return g.FromA + (g.ToA - g.FromA) * e, g.FromY + (g.ToY - g.FromY) * e, false
 end
 
--- The crosshair setting, while the immersive mode is on, with or without this camera: which dots crosshair.lua hides.
--- nil: none (Show, or out of the immersive mode). "dots": every dot but the dot of an aim (crosshair.lua keeps those of
+-- The crosshair setting, in the immersive mode and out of it, with or without this camera: which dots crosshair.lua
+-- hides. Players hid the dot and still saw it out of the immersive mode (Nexus, 04-10-2026), so it works in both.
+-- nil: none (Show). "dots": every dot but the dot of an aim (crosshair.lua keeps those of
 -- AimReticle): Aim only, and Aim + tools while no tool is in a hand (right, left: class names) and the build mode is
 -- off (building), as a tree, a rock or a building piece is aimed at with the dot. "all": every dot, the dot of an aim
 -- too (Nothing). The logging axe was in the left hand in the game (camera log of 14-10-2026).
 function M.HoldsTool(right, left) return Starts(right or "", TOOLS) or Starts(left or "", TOOLS) end
-function M.CrosshairHides(immersive, right, left, building)
+function M.CrosshairHides(right, left, building)
     local c = M.Set.crosshair
-    if immersive ~= true or c == "Show" then return nil end
+    if c == "Show" then return nil end
     if c == "Nothing" then return "all" end
     if c == "Aim + tools" and (building == true or M.HoldsTool(right, left)) then return nil end
     return "dots"
@@ -260,7 +262,7 @@ function M.Hint(i)
         local c = M.Set.crosshair
         if c == "Aim + tools" then return "No crosshair dot, except while you aim, build or hold a tool." end
         if c == "Aim only" then return "No crosshair dot, except while you aim a bow or hold a staff." end
-        if c == "Nothing" then return "No crosshair dot at all in the immersive mode." end
+        if c == "Nothing" then return "No crosshair dot at all." end
         return "The game's crosshair, as always."
     end
     return HINTS[r.Key]

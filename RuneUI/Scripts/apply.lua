@@ -162,7 +162,8 @@ end
 -- only when they change: every step wrote three calls per widget (about 80 calls a step, 30-09-2026). Every scan
 -- forces them, as the bars' colours are set again on every scan in case the game set them back.
 -- look: this step reads the held values back (see LOOK).
-local function ApplyOne(W, k, x, y, scale, E, isSelected, force, EditMode, MapMode, look)
+-- inBag: the tool bar while the bag is open. It shows even when hidden on the HUD: the bag needs its slots.
+local function ApplyOne(W, k, x, y, scale, E, isSelected, force, EditMode, MapMode, look, inBag)
     local map = E.Custom == "map"
     -- the immersive mode's share, exactly 1 when shown; RuneMap takes it in its own opacity (see MapCtx)
     local imm = (Immersive and not map) and Immersive.Factor(E) or 1.0
@@ -172,7 +173,7 @@ local function ApplyOne(W, k, x, y, scale, E, isSelected, force, EditMode, MapMo
     local L = E.Last[k]
     if L and not force and L.X == x and L.Y == y and L.S == scale and L.PX == px and L.PY == py and L.Vis == E.Visible
         and L.Op == op and L.Imm == imm and L.Edit == EditMode and L.Map == MapMode and L.Sel == isSelected
-        and (not L.Watch or (L.Watch == HELD and not look and not E.Fought)) then return end
+        and L.Bag == inBag and (not L.Watch or (L.Watch == HELD and not look and not E.Fought)) then return end
     if not (W and W:IsValid()) then return end
     if E.NoClip then
         if not Unclipped[k] then
@@ -183,6 +184,7 @@ local function ApplyOne(W, k, x, y, scale, E, isSelected, force, EditMode, MapMo
     if not L then L = {} E.Last[k] = L end
     local wasSolid = L.Solid   -- the step before held the widget solid (E.Opaque), so a faded one is the game's doing
     L.Vis, L.Op, L.Imm, L.Edit, L.Map, L.Sel, L.Watch, L.Solid = E.Visible, op, imm, EditMode, MapMode, isSelected, nil, nil
+    L.Bag = inBag
     if px then
         if force or L.PX ~= px or L.PY ~= py then
             W:SetRenderTransformPivot({ X = px, Y = py })
@@ -211,7 +213,7 @@ local function ApplyOne(W, k, x, y, scale, E, isSelected, force, EditMode, MapMo
     -- none found (no survival.lua, a changed game): the whole widget hides as before.
     local parts = E.Parts and PartsOf(E, W, k)
     if parts and #parts == 0 then L.Watch = HELD end   -- a HUD still being built: PartsOf tries again at the next look
-    local shown = E.Visible or (parts and #parts > 0)
+    local shown = E.Visible or inBag or (parts and #parts > 0)
     if shown and parts and #parts > 0 then
         local o = E.Visible and 1.0 or 0.0
         if EditMode then   -- the editor's dimming goes on the parts; the widget stays whole for what lives inside it
@@ -273,7 +275,10 @@ end
 -- Open: the bag's tab row, next to the bar in the same box, is seen. It is hidden (2) from the entry into a world
 -- until the bag was open once, seen while the bag is open (4 with a mouse, 3 with a gamepad) and collapsed (1) after
 -- that; the tool wheel and a change of the input leave it alone (probes of 06-10-2026, with a mouse and a gamepad).
-local Bag = { Tabs = nil, Open = false }
+-- A close fades the tab row from 1 to 0 in about 0.3 s, still seen, and collapses it after the fade (probe of
+-- 17-10-2026): the bar stayed at the bag's place for the fade. So an opacity that falls is a close, and one that rises
+-- again (the bag opened during the fade) is not.
+local Bag = { Tabs = nil, Open = false, Op = nil, Closing = false }
 local function BagOpen()
     local bar = ById("toolbar").Instances[1]
     if not (bar and bar:IsValid()) then Bag.Tabs = nil return false end
@@ -287,10 +292,14 @@ local function BagOpen()
             if c:IsValid() and c:GetFName():ToString() == "TabGroupOverlay" then T = c break end
         end
         if not T then return false end
-        Bag.Tabs = T
+        Bag.Tabs, Bag.Op, Bag.Closing = T, nil, false
     end
     local v = T:GetVisibility()
-    return v ~= 1 and v ~= 2
+    if v == 1 or v == 2 then Bag.Op, Bag.Closing = nil, false return false end
+    local op, was = T:GetRenderOpacity(), Bag.Op
+    Bag.Op = op
+    if was and op < was - 0.001 then Bag.Closing = true elseif was and op > was + 0.001 then Bag.Closing = false end
+    return not Bag.Closing
 end
 -- A gamepad is the input in use (the game's input subsystem: 0 mouse and keyboard, 1 gamepad, 2 touch).
 local Pad = { Input = nil, At = 0 }
@@ -325,10 +334,11 @@ local function ApplyAll(force, EditMode, MapMode, Selected)
         -- with the group "notify" picked, the notices inside it are solid, not dimmed: its preview shows them all
         local sel = EditMode and (i == Selected or (E.Inside == "notify" and Elements[Selected].Id == "notify"))
         local lx, ly, ls = LocalTransform(E)
-        if Bag.Open and E.Id == "toolbar" and not EditMode then lx, ly, ls = 0, 0, 1 end   -- the editor shows the saved place
+        local inBag = Bag.Open and E.Id == "toolbar" and not EditMode   -- the editor shows the saved place
+        if inBag then lx, ly, ls = 0, 0, 1 end
         for n, W in ipairs(E.Instances) do
             -- one widget that throws must not stop the elements after it
-            local ok, err = pcall(ApplyOne, W, E.Keys[n], lx, ly, ls, E, sel, force, EditMode, MapMode, look)
+            local ok, err = pcall(ApplyOne, W, E.Keys[n], lx, ly, ls, E, sel, force, EditMode, MapMode, look, inBag)
             if not ok and not ApplyLogged[E.Id] then ApplyLogged[E.Id] = true Log(E.Id .. ": apply failed: " .. tostring(err)) end
         end
     end
