@@ -224,6 +224,7 @@ function M.Build(H)
                     return MakeText(tree, name, size, color, s, FindPoppinsMedium())
                 end,
                 On = function() return ById("party").Visible end,
+                Numbers = function() return ById("partynumbers").Visible end,
                 -- the three made-up rows show in F9 while the element's row is selected, also when playing alone
                 Preview = function() return SelectedId() == "party" end })
         end

@@ -40,7 +40,8 @@ end
 local function EditKeys()
     return { { { "PgUp", "PgDn" }, "Select" }, { { "←", "→", "↑", "↓" }, "Move" }, { { "+", "-" }, "Size" },
         { { ",", "." }, "Opacity" }, { { "Home", "End" }, "Step" }, { { "Del", "Ins" }, "Hide, show" },
-        { { "Backspace" }, "Reset" }, { { "G" }, "Grid" }, { { KEY.editor }, "Save, close" } }
+        { { "Backspace" }, "Reset" }, { { "G" }, "Grid" }, { { "O" }, "Export" }, { { "I" }, "Import" },
+        { { "U" }, "File: " .. Prof.PlaceLabel() }, { { KEY.editor }, "Save, close" } }
 end
 -- The parts that failed, for a line on every panel: a part whose step or scan threw (Parts), or that gave
 -- up building (Fails, see MayTry; a part with several builds says so itself with Problem).
@@ -53,15 +54,19 @@ local function Problems()
     return "Failed: " .. table.concat(out, ", ") .. ". See UE4SS.log in Win64."
 end
 
--- The F9 view. Rows holds every line of the list; Update shows the lines that fit.
-local function EditView()
+-- The F9 view. Rows holds every line of the list; Update shows the lines that fit (Lines of them: the key list has one
+-- more line than the other panels, and 10 list lines then run past a 1080 line screen). say: the line that O and I
+-- leave for 5 s ("" for none), in place of the hint, in the tone of Prof.SayTone.
+local function EditView(say)
     local E = Elements[Ed.Selected]
-    local v = { Mode = "edit", Title = "LAYOUT", Profile = Prof.N, Keys = EditKeys(), Name = E.Name, Map = {}, Warn = Problems(), Rows = {} }
+    local v = { Mode = "edit", Title = "LAYOUT", Profile = Prof.N, Keys = EditKeys(), Name = E.Name, Map = {}, Warn = Problems(), Rows = {},
+        Lines = Editor.EDIT_ROWS }
     local cx, cy = Spot(E)
     local sx, sy = math.floor(cx + 0.5), math.floor(cy + 0.5)   -- on a 1920 x 1080 screen
     v.Facts = { { "X", tostring(sx) }, { "Y", tostring(sy) }, { "Size", math.floor(E.Scale * 100 + 0.5) .. "%" },
         { "Opacity", math.floor(E.Opacity * 100 + 0.5) .. "%" }, { "Step", tostring(Ed.Step) } }
-    if not E.Visible then v.Hint = "Hidden. Ins shows it again."
+    if say ~= "" then v.Hint, v.HintTone = say, Prof.SayTone
+    elseif not E.Visible then v.Hint = "Hidden. Ins shows it again."
     elseif #E.Instances == 0 then v.Hint = "Not on the screen right now. It still moves." end
     local x, y, w, h = ScreenBox(E)
     v.Mark = { X = x, Y = y, W = w, H = h, Name = E.Name, XY = "X " .. sx .. "   Y " .. sy, Sample = E.Visible and E.Sample or nil }
@@ -135,11 +140,13 @@ function M.Update(now)
             return
         end
         -- a new view only when something it shows changed: the numbers of every element, the step, the screen
+        local say = now < Prof.SayUntil and Prof.Say or ""   -- the line of U, O and I: it comes and goes, so it is part of the state
         local state
         if P then
             state = P.State() .. "|" .. Hud.VW .. "|" .. Hud.VH .. "|" .. (Problems() or "")
         else
-            local parts = { "edit", Ed.Selected, Ed.Step, Prof.N, Hud.VW, Hud.VH, Hud.S, Problems() or "", Ed.Grid and "grid" or "" }
+            local parts = { "edit", Ed.Selected, Ed.Step, Prof.N, Hud.VW, Hud.VH, Hud.S, Problems() or "", Ed.Grid and "grid" or "", say, Prof.SayTone,
+                Prof.PlaceLabel() }
             for _, El in ipairs(Elements) do
                 parts[#parts + 1] = string.format("%.1f,%.1f,%.2f,%.1f,%s,%d", El.X, El.Y, El.Scale, El.Opacity,
                     El.Visible and "1" or "0", #El.Instances)
@@ -150,8 +157,8 @@ function M.Update(now)
         -- on the first open), not no panel
         if not Editor.Shown then Editor.Open(true) Editor.Shown = true end
         if state ~= Panel.State then
-            local v = P and P.View(KEY, Problems()) or EditView()
-            v.Rows = Panels.Window(v.Rows, Editor.ROWS)
+            local v = P and P.View(KEY, Problems()) or EditView(say)
+            v.Rows = Panels.Window(v.Rows, v.Lines or Editor.ROWS)
             Editor.Update(Panels.Links(v, KEY))
             Panel.State, Panel.View = state, v
         end

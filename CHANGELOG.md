@@ -3,6 +3,23 @@
 This file lists all notable changes to Rune UI, newest first.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+## [1.15] - 2026-10-22
+
+### Added
+
+- Share a layout in F9: O exports, I imports, U picks the folder.
+- A Rune Skin switch for each friend's health number on the party panel.
+
+### Changed
+
+- The install steps in the zip's README point to UE4SS on GitHub.
+
+### Fixed
+
+- The immersive camera no longer stops working after a bow draw.
+
 ## [1.14] - 2026-10-19
 
 ### Added

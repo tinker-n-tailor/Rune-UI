@@ -1,7 +1,7 @@
 -- Rune UI: move, resize and hide parts of the Dragonwilds HUD, with a new minimap, survival rings and bars.
 -- F9 opens the layout editor, F5 Rune Skin, F8 Rune Map, F6 the immersive mode. A timer applies the layout; gold corners mark the selected element.
 
-local VERSION = "1.14"
+local VERSION = "1.15"
 
 local function Log(msg) print("[RuneUI] " .. msg .. "\n") end
 Log("starting " .. VERSION .. " on " .. tostring(_VERSION))
@@ -84,8 +84,11 @@ Engine.RemovePreviousRun()
 
 -- The settings file and the three layout profiles live in profiles.lua; settings.lua reads and writes the file.
 local Settings = Need("settings")
+local LayoutFile = Need("layoutfile")   -- the file that F9 shares a layout through (O and I)
+LayoutFile.Init({ Settings = Settings, Elements = Elements })
 local Profiles = Need("profiles")
-Profiles.Init({ Log = Log, VERSION = VERSION, Elements = Elements, Defaults = Defaults, Settings = Settings, Layout = Layout })
+Profiles.Init({ Log = Log, VERSION = VERSION, Elements = Elements, Defaults = Defaults, Settings = Settings, Layout = Layout,
+    LayoutFile = LayoutFile })
 local Prof, Cfg, SaveCfg = Profiles.Prof, Profiles.Cfg, Profiles.SaveCfg
 Profiles.LoadLayout()
 

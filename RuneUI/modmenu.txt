@@ -49,6 +49,8 @@
       "tooltip": "On: the game's icons show beside the bars. Each layout profile has its own." },
     { "key": "health_numbers", "type": "toggle", "label": "Bar numbers", "default": false,
       "tooltip": "On: numbers show on the health and stamina bars. Each layout profile has its own." },
+    { "key": "party_numbers", "type": "toggle", "label": "Party numbers", "default": false,
+      "tooltip": "On: the party panel's bars are taller, with each friend's health in them. When the game sends a value that looks wrong, the bar shows the percent. Each layout profile has its own." },
     { "key": "horizontal_cooldowns", "type": "toggle", "label": "Spell cooldowns in a row", "default": false,
       "tooltip": "On: the spell cooldown tiles are in a row from left to right, the newest at the right end, instead of one column. The left end of the box stays where it is, so a saved position stays. Each layout profile has its own." },
 

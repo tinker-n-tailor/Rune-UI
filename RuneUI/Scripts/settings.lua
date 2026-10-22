@@ -8,6 +8,7 @@ local HEADER = "# Rune UI settings. The mod writes this file. Delete a line to g
 local ORDER = { "general", "layout 1", "layout 2", "layout 3", "map", "camera", "keys" }
 -- the fields of a layout row in the order of the old files, so a row reads like the line it replaced
 local FIELDS = { "x", "y", "scale", "visible", "opacity", "edgex", "edgey", "wait" }
+M.FIELDS = FIELDS   -- layoutfile.lua keeps the same fields in the layout file
 
 -- a number in a range, or the default: every value can come from a hand-edited file
 function M.Num(v, lo, hi, d)
@@ -111,9 +112,10 @@ local function Row(id, row)
     return table.concat(out, " ")
 end
 
--- order: optional list of element ids; a layout section writes its rows in that order, the rest sorted after
-function M.Format(t, order)
-    local out, names, seen = { HEADER }, {}, {}
+-- order: optional list of element ids; a layout section writes its rows in that order, the rest sorted after.
+-- header: the comment line on top, when it is not the one of runeui.txt (the layout file has its own).
+function M.Format(t, order, header)
+    local out, names, seen = { header or HEADER }, {}, {}
     for _, n in ipairs(ORDER) do if type(t[n]) == "table" then names[#names + 1] = n seen[n] = true end end
     for _, n in ipairs(Sorted(t)) do if not seen[n] and type(t[n]) == "table" then names[#names + 1] = n end end
     for i, n in ipairs(names) do
@@ -133,10 +135,11 @@ function M.Format(t, order)
     return table.concat(out)
 end
 
-local function ReadFile(path)
+-- max: read at most that many bytes, for a file from outside that may be huge (a file that is empty gives "")
+local function ReadFile(path, max)
     local f = io.open(path, "r")
     if not f then return nil end
-    local s = f:read("a")
+    local s = f:read(max or "a") or ""
     f:close()
     return s
 end
@@ -152,9 +155,9 @@ end
 -- written to a .tmp file first, so a crash during the write never leaves half a file. On Windows os.rename
 -- does not replace an existing file, hence the remove before the second try. A whole .tmp file stays until the
 -- file itself is written, as Load reads it when the file is gone.
-function M.Save(t, path, order)
+function M.Save(t, path, order, header)
     path = path or M.FILE
-    local text, tmp = M.Format(t, order), path .. ".tmp"
+    local text, tmp = M.Format(t, order, header), path .. ".tmp"
     local f = io.open(tmp, "w")
     if f then
         local ok = f:write(text)

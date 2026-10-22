@@ -119,6 +119,21 @@ local function TickBody()
     if Skin and Skin.LayoutDirty then Skin.LayoutDirty = false Ed.Save = true end
     if Ed.Save then Ed.Save = false Profiles.SaveLayout() end
     if Prof.Wanted then Prof.Wanted = false pcall(Prof.Next) end
+    if Prof.PlaceWanted then
+        Prof.PlaceWanted = false
+        local ok, err = pcall(Prof.NextPlace)
+        if not ok then Log("layout file place failed: " .. tostring(err)) end
+    end
+    if Prof.ExportWanted then
+        Prof.ExportWanted = false
+        local ok, err = pcall(Prof.Export)
+        if not ok then Log("layout export failed: " .. tostring(err)) end
+    end
+    if Prof.ImportWanted then
+        Prof.ImportWanted = false
+        local ok, err = pcall(Prof.Import)
+        if not ok then Log("layout import failed: " .. tostring(err)) end
+    end
 
     local overlayFrom, overlayM = os.clock(), collectgarbage("count")
     Overlay.Update(now)

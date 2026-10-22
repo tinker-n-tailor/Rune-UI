@@ -27,7 +27,7 @@ function M.ById(id)
 end
 
 -- Elements with no widget of their own: they only switch something on or off
-local SWITCH = { creatures = true, baricons = true, barnumbers = true,immersive = true, aim = true, runexp = true, floatxp = true, cdhoriz = true,
+local SWITCH = { creatures = true, baricons = true, barnumbers = true, partynumbers = true, immersive = true, aim = true, runexp = true, floatxp = true, cdhoriz = true,
     enemybars = true, slimlevel = true, combattext = true, wheels = true, dialskin = true }
 function M.IsSwitch(E) return SWITCH[E.Custom] == true end
 -- The box of E: width and height swap while the switch named in E.Turn is on (the spell cooldowns, as a row). It

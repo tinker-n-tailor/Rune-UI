@@ -13,7 +13,10 @@ local PANEL_BG = "/Game/Art/UI/ShaderWork/MI_Menu_PanelBG_Shared.MI_Menu_PanelBG
 local WIDTH, PAD = 460, 28   -- 420 left four key boxes and a long name no room
 local INNER = WIDTH - 2 * PAD
 local MAP_W, MAP_H = INNER, math.floor(INNER * 9 / 16)   -- the screen map: a 16:9 screen
-M.ROWS, M.BOXES, M.KEYS, M.CAPS = 10, 40, 10, 4           -- list lines (group titles too), map boxes, key cells, caps a cell
+M.ROWS, M.BOXES, M.KEYS, M.CAPS = 10, 40, 12, 4           -- list lines (group titles too), map boxes, key cells, caps a cell
+-- F9 lists 11 keys, six lines of them. The panel is then 1093 units high at 1080 (measured from a game screenshot at 2560 x 1440:
+-- 1057 with five lines of keys, 36 more a line), more than the screen. So its list shows 9 lines, 30 units less (see Update).
+M.EDIT_ROWS = 9
 
 local function Lin1(c) if c <= 0.04045 then return c / 12.92 end return ((c + 0.055) / 1.055) ^ 2.4 end
 local function Hex(h, a)
@@ -285,8 +288,9 @@ local function Build(ctx)
         Fill(cell, B)
         local hs = cell:AddChildToOverlay(head) hs:SetVerticalAlignment(3) hs:SetPadding({ Left = 0, Top = 8, Right = 0, Bottom = 1 })
         -- every line has the same height, a group title or a row: the panel does not change its height while the list scrolls
-        AddV(body, Sized(cell, nil, 30))
-        U.Rows[i] = { B = B, T = T, Note = note, Diamond = ds, Head = head }
+        local box = Sized(cell, nil, 30)
+        AddV(body, box)
+        U.Rows[i] = { Box = box, B = B, T = T, Note = note, Diamond = ds, Head = head }
     end
     Divider(10, 12)
 
@@ -377,6 +381,7 @@ function M.Update(v)
         if p then f.L:SetText(FText(p[1])) f.V:SetText(FText(p[2])) end
     end
     U.Hint:SetText(FText(v.Hint or ""))
+    Color(U.Hint, v.HintTone == "gold" and GOLD or v.HintTone == "warn" and WARN or MUTED)   -- the line of O and I; a hint is muted
     -- hidden, not collapsed: a collapsed child gives up the fixed height of its box, and the panel got 36 shorter on every
     -- row without a hint (measured in the game, 05-10-2026: height 930 and 966, y 75 and 57)
     U.Hint:SetVisibility((v.Hint or "") ~= "" and 3 or 2)
@@ -384,6 +389,7 @@ function M.Update(v)
     Show(U.Warn, (v.Warn or "") ~= "")
     for i, r in ipairs(U.Rows) do
         local row = v.Rows[i]
+        Show(r.Box, i <= (v.Lines or M.ROWS))   -- a line that the panel does not show gives up its height too
         if not row then
             Show(r.B, false) Show(r.Head, false)
         elseif row.Head then

@@ -203,11 +203,13 @@ function M.Glide(g, toA, toY, secs, now, a, y)
     g.FromA, g.FromY, g.ToA, g.ToY, g.Start, g.Secs = a, y, toA, toY, now, secs
     return true
 end
+-- Ease: the curve's share at k (0 to 1 of the time), for the glide and for camera.lua's way back from the bow zoom
+function M.Ease(k) return 1 - (1 - k) ^ 3 end
 function M.GlideAt(g, now)
     local k = g.Secs > 0 and (now - g.Start) / g.Secs or 1
     if k >= 1 then return g.ToA, g.ToY, true end
     if k < 0 then k = 0 end
-    local e = 1 - (1 - k) ^ 3
+    local e = M.Ease(k)
     return g.FromA + (g.ToA - g.FromA) * e, g.FromY + (g.ToY - g.FromY) * e, false
 end
 

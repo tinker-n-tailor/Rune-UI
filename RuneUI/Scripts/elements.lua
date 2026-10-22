@@ -56,6 +56,10 @@ local Elements = {
     -- stamina bar (staminatext.lua; unseen at first)
     { Id="barnumbers", Name="Bar numbers",                  Custom="barnumbers",
       A={0,0}, Center={X=290, Y=45}, Size={X=80, Y=20} },
+    -- no widget of its own either: showing it makes the party panel's bars taller, with each friend's health in them
+    -- (party.lua; unseen at first)
+    { Id="partynumbers", Name="Party numbers",              Custom="partynumbers",
+      A={0,0}, Center={X=154.5, Y=301}, Size={X=80, Y=20} },
     -- no widget of its own either: shown, the HUD fades when nothing happens (immersive.lua; off at first). The F6
     -- panel switches it and sets its Wait.
     { Id="immersive", Name="Immersive mode",                 Custom="immersive",
@@ -209,7 +213,7 @@ local Defaults = {
     prompts={X=0, Y=-10}, armor={X=0, Y=-10}, status={X=0, Y=-20}, menuico={X=0, Y=-40},
     -- the same Y as "notify"
     banners={Y=-20}, upkeep={Y=-20}, tips={Y=-20},
-    baricons={Visible=false}, barnumbers={Visible=false}, immersive={Visible=false, Wait=8},
+    baricons={Visible=false}, barnumbers={Visible=false}, partynumbers={Visible=false}, immersive={Visible=false, Wait=8},
     floatxp={Visible=false},
     -- 140 under the middle, clear of the party panel; a saved layout keeps its own place
     cooldowns={Y=140},

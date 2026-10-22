@@ -31,6 +31,7 @@ Open `Win64\ue4ss\UE4SS.log`. If it says "Fatal Error", UE4SS is the old version
 
 - **F9** opens the editor: move, resize, fade or hide a part. The mod saves your layout.
 - **F7** in the editor saves the layout and goes to the next of three profiles.
+- **O** and **I** in the editor export the layout to a file and import it, to share it. **U** picks the folder.
 - **F5** opens Rune Skin, with a switch for each redesigned part.
 - **F8** opens the Rune Map settings.
 - **F6** opens the immersive mode settings, with the camera.

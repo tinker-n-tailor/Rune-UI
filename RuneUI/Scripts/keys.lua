@@ -161,6 +161,12 @@ function M.Bind()
 
     RegisterKeyBind(VK.G, function() if Ed.Edit then Ed.Grid = not Ed.Grid end end)   -- the grid of F9, off and on
 
+    -- O and I: the layout of the profile in use to a file and back, U: the folder of that file, only while the editor is open
+    -- (the step does it, see Prof.Export). Not P: the game opens its spell book on P (IMC_GameplayUI).
+    RegisterKeyBind(VK.O, function() if Ed.Edit then Prof.ExportWanted = true end end)
+    RegisterKeyBind(VK.I, function() if Ed.Edit then Prof.ImportWanted = true end end)
+    RegisterKeyBind(VK.U, function() if Ed.Edit then Prof.PlaceWanted = true end end)
+
     RegisterKeyBind(VK.Delete,function() if Ed.Edit and not Elements[Ed.Selected].NoHide then Elements[Ed.Selected].Visible = false end end)
     RegisterKeyBind(VK.Insert, function() if Ed.Edit then Elements[Ed.Selected].Visible = true end end)
     RegisterKeyBind(VK.Backspace, function()

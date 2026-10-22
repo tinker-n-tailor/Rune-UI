@@ -1,18 +1,20 @@
 -- The settings file in memory (Cfg), the three layout profiles, and the loading and saving of the layout of the profile
 -- in use. settings.lua reads and writes the file itself. main.lua loads this file, calls Init once, then LoadLayout, and
--- the step and the Mod Menu rows call SaveLayout and Prof.Next.
+-- the step and the Mod Menu rows call SaveLayout and Prof.Next. The step also calls Prof.NextPlace, Prof.Export and Prof.Import, the layout file
+-- of F9 (layoutfile.lua).
 
 local M = {}
 
 -- From main.lua (Init): the log, the version for the file, the element list and its starting layout, settings.lua and layout.lua's names.
-local Log, VERSION, Elements, Defaults, Settings, Third, Retarget, TargetFromSpot
+local Log, VERSION, Elements, Defaults, Settings, LayoutFile, Third, Retarget, TargetFromSpot
 local Cfg
 local ElementIds = {}   -- the order of the rows in the file: the element list
 
 -- The profiles: three layouts, F7 goes to the next while the editor is open. Profile 1 is the layout every
 -- older version wrote, so no player loses a layout. N: the profile in use. Wanted: F7 sets it on UE4SS's thread,
--- and the step switches.
-local Prof = { N = 1, Wanted = false }
+-- and the step switches. PlaceWanted, ExportWanted and ImportWanted: U, O and I do the same for the layout file. Say, SayTone and SayUntil: the line
+-- that the F9 panel shows in place of its hint after U, O or I (tone "gold" or "warn", until os.clock reaches SayUntil).
+local Prof = { N = 1, Wanted = false, PlaceWanted = false, ExportWanted = false, ImportWanted = false, Say = "", SayTone = "", SayUntil = 0 }
 M.Prof = Prof
 
 -- One file, runeui.txt, next to the game: the three layout profiles, the profile in use, the map settings and
@@ -21,6 +23,7 @@ M.Prof = Prof
 -- left in place.
 function M.Init(ctx)
     Log, VERSION, Elements, Defaults, Settings = ctx.Log, ctx.VERSION, ctx.Elements, ctx.Defaults, ctx.Settings
+    LayoutFile = ctx.LayoutFile
     Third, Retarget, TargetFromSpot = ctx.Layout.Third, ctx.Layout.Retarget, ctx.Layout.TargetFromSpot
     local fresh = false
     Cfg = Settings.Load()
@@ -88,8 +91,65 @@ function Prof.Next()
     SaveLayout()
     Prof.N = Prof.N % 3 + 1
     Settings.Section(Cfg, "general").profile = Prof.N
+    Prof.SayUntil = 0   -- a line about the profile before is not about this one
     if Cfg["layout " .. Prof.N] then LoadLayout() else SaveLayout() end
     Log("profile " .. Prof.N)
+end
+
+local function Say(key, place, dir)
+    Prof.Say, Prof.SayTone = LayoutFile.Say(key, Prof.N, place, dir)
+    Prof.SayUntil = os.clock() + 5
+end
+
+local function General() return Settings.Section(Cfg, "general") end
+-- the name of the place of the layout file, for the F9 legend
+function Prof.PlaceLabel() return LayoutFile.Label(General()) end
+
+-- U: the next place for the layout file, saved at once
+function Prof.NextPlace()
+    LayoutFile.NextPlace(General())
+    M.SaveCfg()
+    local place, dir = LayoutFile.Place(General())
+    Log("layout file place: " .. place)
+    Say("placed", place, dir)
+end
+
+-- O: the layout of the profile in use, with the edits not yet saved, into runeui-layout.txt
+function Prof.Export()
+    SaveLayout()
+    local place, dir = LayoutFile.Place(General())
+    local ok = LayoutFile.Write(Cfg["layout " .. Prof.N], dir .. LayoutFile.FILE)
+    Log("layout file " .. (ok and "written" or "not written") .. ", profile " .. Prof.N .. ", " .. place)
+    Say(ok and "exported" or "exportFailed", place)
+end
+
+-- I: runeui-layout.txt in place of the layout of the profile in use. The old layout goes to the backup file first; when
+-- that cannot be written, nothing changes. A file with no usable row changes nothing. An element that the file has no row
+-- for gets its starting layout (LoadLayout). LoadLayout puts every number into its range, and SaveLayout then writes the
+-- layout as the elements hold it, so runeui.txt never keeps a number from the file that is out of range.
+function Prof.Import()
+    local place, dir = LayoutFile.Place(General())
+    local rows, why = LayoutFile.Read(dir .. LayoutFile.FILE)
+    if not rows then
+        Log("layout file not used: " .. why .. ", " .. place)
+        Say(why == "missing" and "noFile" or "badFile", place)
+        return
+    end
+    SaveLayout()
+    if not LayoutFile.Write(Cfg["layout " .. Prof.N], dir .. LayoutFile.BACKUP) then
+        Log("layout file not used: the backup could not be written")
+        Say("backupFailed")
+        return
+    end
+    -- a row of a part that this version does not have stays: the file cannot hold it, and another version of the mod needs it
+    local known = {}
+    for _, id in ipairs(ElementIds) do known[id] = true end
+    for id, row in pairs(Cfg["layout " .. Prof.N]) do if not known[id] then rows[id] = row end end
+    Cfg["layout " .. Prof.N] = rows
+    LoadLayout()
+    SaveLayout()
+    Log("layout file read, profile " .. Prof.N .. ", " .. place)
+    Say("imported", place)
 end
 
 M.LoadLayout, M.SaveLayout = LoadLayout, SaveLayout

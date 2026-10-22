@@ -6,6 +6,11 @@
 -- every frame while a glide is on (ctx.Loop); a glide on the 50 ms step alone would show the steps. The game's values
 -- are kept and glided back when the camera goes off; a new world has a new arm with the game's values. The lock-on view
 -- is its own camera and stays the game's.
+-- A bow draw wakes the controller, though it still says IsActive false: its tick then writes the game's arm every frame,
+-- for good, over every value of this camera (Nexus report, probes of 20-10-2026). So while this camera applies, the
+-- controller's tick is off, but during a draw, so the game's own bow zoom shows; see GameZoom. The zoom moves the arm's
+-- socket forward (X 420) and down (Z -25) and to the side (Y 70), the field of view to 68 and the lag speed to 30 (probe
+-- of 20-10-2026): after the draw this camera takes all of it back in its own glide, in one move.
 -- The signals: the combat switch, the actors in the hands, the HUD reticle (a bow's aim or a staff's cast: the combat
 -- switch never went on with those) and the game's sprint signal.
 -- Nothing runs while the camera is off, but a glide back and Hands and Building when crosshair.lua asks. main.lua loads
@@ -29,6 +34,9 @@ local ReticleLines = 0   -- not reset by a new world: the cap is per game start
 local Orig = nil         -- the game's arm: { Arm, X, Y, Z }
 local Arm = nil          -- the camera arm the glide writes
 local G = {}             -- the glide (camerarules Glide); Moving while it is not there yet
+local Paused = nil       -- the game's camera controller whose tick this camera turned off
+local Zoom = nil         -- during a draw: the values from before it (Rest), to go back to
+local Out = nil          -- the way back after a draw: { Start, Secs, Arm, Cam, From, To }, From and To as Rest gives
 local State = {}   -- the readings of a step, one table for the whole session
 local Logged = {}
 local function Once(ctx, key, msg) if not Logged[key] then Logged[key] = true ctx.Log(msg) end end
@@ -157,8 +165,35 @@ local function Write(A, a, y)
     A.SocketOffset = { X = so.X, Y = y, Z = so.Z }
 end
 
+-- what the bow zoom moves, but the arm's length and side, which the glide has
+local function Rest(A, F)
+    local so = A.SocketOffset
+    return { X = so.X, Z = so.Z, Fov = F.FieldOfView, Lag = A.CameraLagSpeed }
+end
+local function Put(A, F, v)
+    local so = A.SocketOffset
+    A.SocketOffset = { X = v.X, Y = so.Y, Z = v.Z }
+    A.CameraLagSpeed = v.Lag
+    F:SetFieldOfView(v.Fov)
+end
+
+-- the way back's place now, on the glide's curve
+local function MoveOut()
+    local k = (os.clock() - Out.Start) / Out.Secs
+    local A, F, v = Out.Arm, Out.Cam, Out.To
+    if k < 1 then
+        local e = M.Rules.Ease(math.max(k, 0))
+        v = {}
+        for key, from in pairs(Out.From) do v[key] = from + (Out.To[key] - from) * e end
+    else
+        Out = nil
+    end
+    if Ok(A) and Ok(F) then Put(A, F, v) end
+end
+
 -- the glide's place now on the arm; called every frame by ctx.Loop, and by the step without it
 local function Move()
+    if Out and not pcall(MoveOut) then Out = nil end
     if not G.Moving then return end
     if not Ok(Arm) then G.Moving = false return end
     local a, y, there = M.Rules.GlideAt(G, os.clock())
@@ -176,8 +211,43 @@ local function GlideTo(ctx, a, y, secs)
     end
 end
 
--- the game's camera back: a glide to the game's values, finished by the loop
+local function Draws(pawn) return Ok(pawn) and pawn:IsAiming() end
+
+-- the controller's tick on or off; a controller of an earlier player is let go
+local function SetTick(ctx, C, on)
+    if Paused and not (Ok(Paused) and Paused:GetAddress() == C:GetAddress()) then Paused = nil end
+    if on == (Paused == nil) then return end
+    C:SetComponentTickEnabled(on)
+    Paused = (not on) and C or nil
+    if not on then Once(ctx, "paused", "camera: the game's camera controller paused, but in a bow draw") end
+end
+
+-- True during a bow draw: the game's camera has the view. After it the controller's tick goes off at once, and the way
+-- back starts with a new glide (secs: the glide's time), so the camera goes from the zoom to this camera's view in one
+-- move. A draw in the middle of a way back keeps the values from before the first draw.
+local function GameZoom(ctx, pawn, now, secs)
+    local C = pawn.PlayerCameraController
+    if not Ok(C) then return false end
+    local ok, drawing = pcall(Draws, pawn)
+    if ok and drawing == true then
+        if not Zoom then Zoom = Out and Out.To or Rest(pawn.CameraBoom, pawn.FollowCamera) end
+        Out, G.Moving = nil, false
+        SetTick(ctx, C, true)
+        return true
+    end
+    SetTick(ctx, C, false)
+    if Zoom then
+        local A, F = pawn.CameraBoom, pawn.FollowCamera
+        Out = { Start = now, Secs = secs, Arm = A, Cam = F, From = Rest(A, F), To = Zoom }
+        Zoom, G = nil, {}
+    end
+    return false
+end
+
+-- the game's camera back: the controller's tick as the game had it, and a glide to the game's values, finished by the loop
 local function Restore(ctx)
+    if Ok(Paused) then pcall(function() Paused:SetComponentTickEnabled(true) end) end
+    Paused, Zoom, Out = nil, nil, nil   -- a controller woken by a draw has the zoom's values from here
     if Ok(Arm) and Orig then pcall(GlideTo, ctx, Orig.Arm, Orig.Y, ctx.Rules.GLIDE) end
     M.Applied, M.View, M.Perf, M.Checked = false, nil, NewPerf(0), true
     Mem = nil   -- forgets the fight
@@ -199,8 +269,8 @@ end
 
 function M.Forget(sameWorld)
     Comp, Hands, Ret = {}, {}, { Names = {} }
-    -- the arm goes with the player; a new one has the game's values, and the camera glides from there
-    Arm, G = nil, {}
+    -- the arm and the controller go with the player; a new one has the game's values, and the camera glides from there
+    Arm, G, Paused, Zoom, Out = nil, {}, nil, nil, nil
     if not sameWorld then
         M.Applied, M.View, Mem = false, nil, nil
         Logged = {}
@@ -225,8 +295,7 @@ end
 -- named, so a pcall of it makes no closure (4 calls a second)
 local function PawnAims()
     local pc = M.Ctx.Controller()
-    local pawn = pc and pc.Pawn
-    return Ok(pawn) and pawn:IsAiming()
+    return Draws(pc and pc.Pawn)
 end
 function M.Aiming()
     if not M.Ctx then return false end
@@ -265,6 +334,9 @@ function M.Tick(ctx)
     if not out.Active then return end
     if not Orig then Keep(ctx, A) end
     M.Applied = true
+    local okZ, zoom = pcall(GameZoom, ctx, pawn, now, out.Glide)
+    if not okZ then Once(ctx, "zoom", "camera: the game's camera controller failed: " .. tostring(zoom)) end
+    if okZ and zoom then return end
     GlideTo(ctx, out.Distance, out.Side, out.Glide)
     -- a log line when the view changes: with the reticle lines it shows what starts the ranged view
     local view = out.View

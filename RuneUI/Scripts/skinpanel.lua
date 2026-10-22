@@ -17,6 +17,7 @@ M.ROWS = {
     { Id = "dialskin", On = "The day and night dial is a sun and moon icon. Show it in Layout.", Off = "The game's own day and night dial." },
     { Id = "baricons", On = "The game's icons show beside the bars.", Off = "No icons beside the bars." },
     { Id = "barnumbers", On = "Numbers show on the health and stamina bars.", Off = "No numbers on the bars." },
+    { Id = "partynumbers", On = "Each friend's health shows in the party panel's bars.", Off = "No numbers on the party panel." },
     { Id = "cdhoriz", On = "The cooldown tiles are in a row. Move them in Layout.", Off = "The cooldown tiles are in a column. Move them in Layout." },
 }
 
