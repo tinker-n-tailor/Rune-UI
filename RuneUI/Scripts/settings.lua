@@ -145,32 +145,62 @@ local function ReadFile(path, max)
 end
 M.ReadFile = ReadFile
 
--- a save cut off between the remove and the rename leaves only the .tmp file, so it is read too
+-- The files Save writes first: .new when a .tmp cannot be opened (locked or read-only). A save cut off between the
+-- remove and the rename leaves only one of them, so they are read too.
+local function Scratch(path) return { path .. ".tmp", path .. ".new" } end
+function M.ReadSaved(path, max)
+    local s = ReadFile(path, max)
+    for _, name in ipairs(Scratch(path)) do s = s or ReadFile(name, max) end
+    return s
+end
+
 function M.Load(path)
-    path = path or M.FILE
-    local s = ReadFile(path) or ReadFile(path .. ".tmp")
+    local s = M.ReadSaved(path or M.FILE)
     return s and M.Parse(s) or nil
 end
 
--- written to a .tmp file first, so a crash during the write never leaves half a file. On Windows os.rename
--- does not replace an existing file, hence the remove before the second try. A whole .tmp file stays until the
--- file itself is written, as Load reads it when the file is gone.
+local function Exists(name)
+    local f = io.open(name, "r")
+    if f then f:close() end
+    return f ~= nil
+end
+
+-- true only when the write and the close both worked: a full disk can show only at the close
+local function WriteTo(f, text)
+    local ok = f:write(text)
+    local closed = f:close()
+    return (ok and closed) and true or false
+end
+
+-- Written to a scratch file first, so a crash or a full disk never cuts the file itself. On Windows os.rename
+-- does not replace an existing file, hence the remove before the second try. A whole scratch file stays until the
+-- file itself is written, as ReadSaved reads it when the file is gone.
 function M.Save(t, path, order, header)
     path = path or M.FILE
-    local text, tmp = M.Format(t, order, header), path .. ".tmp"
-    local f = io.open(tmp, "w")
-    if f then
-        local ok = f:write(text)
-        f:close()
-        if ok and (os.rename(tmp, path) or (os.remove(path) and os.rename(tmp, path))) then return true end
-        if not ok then os.remove(tmp) end
+    local text = M.Format(t, order, header)
+    -- a scratch file that is the only copy becomes the file first, or is skipped below, so the write never cuts it
+    local keep
+    if not Exists(path) then
+        for _, name in ipairs(Scratch(path)) do
+            if Exists(name) then
+                if not os.rename(name, path) then keep = name end
+                break
+            end
+        end
     end
-    f = io.open(path, "w")
-    if not f then return false end
-    local ok = f:write(text)
-    f:close()
-    if ok then os.remove(tmp) end
-    return ok and true or false
+    for _, tmp in ipairs(Scratch(path)) do
+        local f = tmp ~= keep and io.open(tmp, "w")
+        if f then
+            if not WriteTo(f, text) then os.remove(tmp) return false end
+            if os.rename(tmp, path) or (os.remove(path) and os.rename(tmp, path)) then return true end
+            -- no rename at all: the file is written in place, and a cut one is removed so that ReadSaved reads tmp
+            local g = io.open(path, "w")
+            if g and WriteTo(g, text) then os.remove(tmp) return true end
+            os.remove(path)
+            return false
+        end
+    end
+    return false
 end
 
 -- The older files, in the same table. read(name) gives a file's text or nil. The rules are LoadLayout's

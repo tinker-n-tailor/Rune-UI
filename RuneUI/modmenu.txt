@@ -87,6 +87,8 @@
       "tooltip": "Seconds without anything happening before the HUD fades." },
     { "key": "camera_crosshair", "type": "choice", "label": "Crosshair", "options": ["Show", "Aim + tools", "Aim only", "Nothing"], "default": "Show",
       "tooltip": "The dot. Show: always. Aim + tools: aim, tools. Aim only: aim. Nothing: never." },
+    { "key": "camera_toolbar", "type": "toggle", "label": "Fade the tool bar", "default": false,
+      "tooltip": "On: in immersive mode, the tool bar fades too, and a tool swap, an aim or a hit brings it back. Off: it stays." },
 
     { "type": "header", "label": "Immersive camera" },
     { "key": "camera_on", "type": "toggle", "label": "Immersive camera", "default": false,

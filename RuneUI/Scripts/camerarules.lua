@@ -18,6 +18,8 @@ M.ROWS = {
     -- "Aim only" was "Hide" in older files: an old file or Mod Menu value reads as "Aim only" (Old)
     { Key = "crosshair", Label = "Crosshair", Kind = "choice", Options = { "Show", "Aim + tools", "Aim only", "Nothing" }, Default = "Show",
         Old = { hide = "Aim only" } },
+    -- the immersive mode's tool bar: off, it never fades (immersive.lua)
+    { Key = "toolbar", Label = "Fade the tool bar", Kind = "switch", Default = false },
     { Key = "on", Label = "Immersive camera", Kind = "switch", Default = false },
     { Key = "walk", Label = "Walk distance", Kind = "number", Min = 100, Max = 1500, Step = 25, Unit = "cm", Default = 300 },
     { Key = "side", Label = "Side offset", Kind = "number", Min = 0, Max = 200, Step = 10, Unit = "cm", Default = 90 },
@@ -219,12 +221,14 @@ end
 -- AimReticle): Aim only, and Aim + tools while no tool is in a hand (right, left: class names) and the build mode is
 -- off (building), as a tree, a rock or a building piece is aimed at with the dot. "all": every dot, the dot of an aim
 -- too (Nothing). The logging axe was in the left hand in the game (camera log of 14-10-2026).
+-- CrosshairNeedsHands: the setting asks what the hands hold and the build mode, so crosshair.lua reads them only then.
 function M.HoldsTool(right, left) return Starts(right or "", TOOLS) or Starts(left or "", TOOLS) end
+function M.CrosshairNeedsHands() return M.Set.crosshair == "Aim + tools" end
 function M.CrosshairHides(right, left, building)
     local c = M.Set.crosshair
     if c == "Show" then return nil end
     if c == "Nothing" then return "all" end
-    if c == "Aim + tools" and (building == true or M.HoldsTool(right, left)) then return nil end
+    if M.CrosshairNeedsHands() and (building == true or M.HoldsTool(right, left)) then return nil end
     return "dots"
 end
 
@@ -255,6 +259,10 @@ function M.Hint(i)
     if r.Key == "immersive" then
         if M.Mode.Visible then return "The HUD fades when nothing happens, and comes back when something does." end
         return "The whole HUD stays on the screen."
+    end
+    if r.Key == "toolbar" then
+        if M.Set.toolbar then return "The tool bar fades too. A tool swap, an aim or a hit brings it back." end
+        return "The tool bar stays on the screen in the immersive mode."
     end
     if r.Key == "on" then
         if not M.Set.on then return "The game's own camera. On: closer, your character on the left." end

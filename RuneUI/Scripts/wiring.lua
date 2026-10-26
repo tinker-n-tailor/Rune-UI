@@ -120,6 +120,9 @@ function M.Build(H)
         ChatCount = function() return MenuButtons and MenuButtons.Chat end,
         MapStays = function() return RuneMap ~= nil and RuneMap.Set.Immersive == "Map" end,
         CompassStays = function() return RuneMap ~= nil and RuneMap.Set.Immersive == "Compass" end,
+        -- the F6 switch "Fade the tool bar", and the count of tool swaps that bring it back
+        ToolbarFades = function() return Camera ~= nil and Camera.Set.toolbar == true end,
+        ToolSwaps = function() return Toolbar and Toolbar.Swaps end,
         -- the quest and step on show: a change brings the quest tracker back
         QuestSig = function() return QuestLook and QuestLook.Sig end,
         -- a new ammo picture, name or count: a change brings the ammo counter back

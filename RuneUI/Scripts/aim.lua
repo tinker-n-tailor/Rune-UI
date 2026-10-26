@@ -246,12 +246,12 @@ local function Unring()
 end
 
 local function Diamond(ctx)
+    if M.NoPicture then return end   -- the picture did not load once: not read from disk every half second
     local O = ctx.Orb()
     if not (O and O:IsValid()) then return end
     local host = O:GetFullName()
     local o = M.Orb
     if not (o and o.Host == host and o.W:IsValid()) then
-        if M.NoPicture then return end   -- the picture did not load once: not read from disk every half second
         local img
         local tree = O.WidgetTree
         pcall(function() img = tree.RootWidget:GetContent() end)   -- SizeBox_1 holds the Orb image
@@ -263,12 +263,17 @@ local function Diamond(ctx)
         if not Saved[host] and string.find(full, " /Game/", 1, true) then
             Saved[host] = { Tex = string.match(full, "^%S+%s+(.*)$") or full, Size = { X = b.ImageSize.X, Y = b.ImageSize.Y } }
         end
+        o = { W = img, Host = host }
+        M.Orb = o
+    end
+    -- our picture, loaded again when it is gone: the engine frees it once the game takes it off the image, and a freed
+    -- slot can hold a new valid object, so it is checked by its full name too (see Spell)
+    if not (o.Tex and o.Tex:IsValid() and o.Tex:GetFullName() == o.TexName) then
         -- the widget holds the texture: one held only by Lua gets freed by the engine (see survival.lua)
         local KRL = Obj("/Script/Engine.Default__KismetRenderingLibrary")
-        local okT, tex = pcall(function() return KRL:ImportFileAsTexture2D(tree, ART_DIR .. "runemap_diamond.png") end)
+        local okT, tex = pcall(function() return KRL:ImportFileAsTexture2D(O.WidgetTree, ART_DIR .. "runemap_diamond.png") end)
         if not (okT and tex and tex:IsValid()) then M.NoPicture = true Once(ctx, "tex", "aim: diamond picture not loaded") return end
-        o = { W = img, Host = host, Tex = tex }
-        M.Orb = o
+        o.Tex, o.TexName = tex, tex:GetFullName()
     end
     -- the first time, or the game put its own picture back (two Lua handles of one object are not ==)
     local now = o.W.Brush.ResourceObject

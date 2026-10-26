@@ -124,7 +124,7 @@ end
 -- The rows of a layout file, or nil and why: "missing" when there is no file, "bad" when it is too big, has no
 -- [layout] section or holds no row that is usable.
 function M.Read(path)
-    local text = Settings.ReadFile(path, MAX_BYTES + 1)
+    local text = Settings.ReadSaved(path, MAX_BYTES + 1)
     if text == nil then return nil, "missing" end
     if #text > MAX_BYTES then return nil, "bad" end
     local rows, count = Clean(Settings.Parse(text).layout)

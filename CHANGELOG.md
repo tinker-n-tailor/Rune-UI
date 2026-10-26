@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.16] - 2026-10-27
+
+### Added
+
+- A switch in F6 to fade the tool bar in immersive mode.
+
+### Fixed
+
+- A save on a full disk no longer empties the settings file.
+- The lock-on diamond no longer breaks after the game takes it off the target.
+- No more small stutter at each scan before the first enemy or boss bar loads.
+
 ## [1.15] - 2026-10-22
 
 ### Added

@@ -94,6 +94,7 @@ Map refresh                                Every 2nd frame (at first). Every fra
 Immersive mode                             On: the HUD fades when nothing happens. Off at first.
 Wait before the fade                       3 to 30 s, 8 at first.
 Crosshair                                  Show (at first), Aim + tools (the dot while you aim, build or hold a tool), Aim only (the dot while you aim) or Nothing (no dot).
+Fade the tool bar                          On: in immersive mode, the tool bar fades too. A tool swap, an aim or a hit brings it back. Off at first.
 Immersive camera                           On: a closer camera, with or without immersive mode. Off at first.
 Walk distance                              100 to 1500 cm, 300 at first.
 Side offset                                0 to 200 cm, 90 at first.

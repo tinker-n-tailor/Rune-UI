@@ -5,8 +5,9 @@
 -- when a chat message comes, the quest tracker when a quest or its step changes, the party panel when a friend's
 -- health goes down, the ammo counter when the ammo changes and while you aim. The wheel stays away. RuneMap and the game's compass stay away too, unless the map setting
 -- "Keep in immersive mode" keeps one of them: Map keeps the map (and the quest tracker), Compass keeps the compass (M opens
--- the big map). The tool bar never fades, because what matters can sit on it. Prompts, notifications, the area
--- effects and warnings never fade either.
+-- the big map). The tool bar stays, because what matters can sit on it, unless the F6 switch "Fade the tool bar" is
+-- on: then a tool swap, an aim or a hit (the bars' reason) brings it back. In the bag it never fades (apply.lua).
+-- Prompts, notifications, the area effects and warnings never fade.
 -- Off at first; the F6 panel turns it on and sets how long a part stays (the layout keeps both, main.lua).
 -- apply.lua multiplies an element's opacity by Factor(E). The bars widget also holds the food rings and the area
 -- effects, so it is not faded whole: its three rows and the trim line under them are faded here, and each ring too.
@@ -25,12 +26,13 @@ local function Hold(ctx) return ctx.Wait() end
 -- "Menu icons" (menuico) is not in it: that widget is the game's full-screen menu, not the icons in the corner
 -- (widget dump of 29-09-2026)
 local GROUP = { avatar = "bars", weapon = "bars", compass = "compass", wheel = "none", runemap = "none",
-    menubtn = "menu", questlist = "quest", party = "party", ammo = "ammo" }
+    menubtn = "menu", questlist = "quest", party = "party", ammo = "ammo", toolbar = "tools" }
 
 M.ErrorLogged = false   -- main.lua logs one failed step
-local Level = { bars = 1, menu = 1, quest = 1, party = 1, ammo = 1, compass = 1, none = 1 }
+local Level = { bars = 1, menu = 1, quest = 1, party = 1, ammo = 1, tools = 1, compass = 1, none = 1 }
 local Until = {}
 local RingLevel, RingUntil, RingLast = {}, {}, {}
+local LastSwap = nil
 -- What was last written, by slot (Stale, Wrote): the widget and the opacity, so a step that changes nothing makes no call.
 -- RowMem: the bars' rows (1 to 3) and the trim line ("trim"); RingMem: the survival rings; DrinkMem: the drink rings.
 local RowMem, RingMem, DrinkMem = {}, {}, {}
@@ -57,12 +59,12 @@ end
 -- Leaving the world: drop the handles into it, and show everything for a moment in the new one
 function M.Forget()
     Texts, RowMem, RingMem, DrinkMem, RingLevel, RingUntil, RingLast = {}, {}, {}, {}, {}, {}, {}
-    LastChat, LastQuest, LastHits, LastAmmo, NextReassert = nil, nil, nil, nil, 0
+    LastChat, LastQuest, LastHits, LastAmmo, LastSwap, NextReassert = nil, nil, nil, nil, nil, 0
     DrinkLevel, DrinkUntil, DrinkLast = {}, {}, {}
     BuffUntil, BuffSeen, BuffLevel, BuffApplied = ByEntry(), ByEntry(), ByEntry(), ByEntry()
     for g in pairs(Level) do Level[g] = 1 end
     local t = os.clock() + SHOW_AT_START
-    Until = { bars = t, buffs = t, menu = t, quest = t, party = t, ammo = t }
+    Until = { bars = t, buffs = t, menu = t, quest = t, party = t, ammo = t, tools = t }
     for i = 1, 3 do RingUntil[i] = t end
 end
 M.Forget()
@@ -94,7 +96,10 @@ local function Read(ctx, now)
     if health then
         Once(ctx, "health", "immersive: health bar text '" .. health .. "'")
         local cur, max = string.match(health, "(%d+)%s*/%s*(%d+)")
-        if cur and tonumber(cur) < tonumber(max) then Until.bars = now + Hold(ctx) end
+        if cur and tonumber(cur) < tonumber(max) then
+            Until.bars = now + Hold(ctx)
+            Until.tools = Until.bars
+        end
     end
     -- Stamina does not bring the bars back: a run uses it too, and the bars are for a fight. The game still plays
     -- its sound and its flash when the stamina is gone.
@@ -113,8 +118,13 @@ local function Read(ctx, now)
     -- the ammo counter: a change (ammo.lua counts a new name, picture or count: a swap, a weapon taken, a shot or a
     -- cast) brings it for the wait, and drawing a bow keeps it (camera.lua asks the game, also with its camera off)
     local change = ctx.AmmoChange and ctx.AmmoChange()
-    if (change and change ~= LastAmmo) or (ctx.Aiming and ctx.Aiming()) then Until.ammo = now + Hold(ctx) end
+    local aiming = ctx.Aiming and ctx.Aiming()
+    if (change and change ~= LastAmmo) or aiming then Until.ammo = now + Hold(ctx) end
     LastAmmo = change
+    -- the tool bar: a new slot in use (toolbar.lua counts them: a number key, the wheel, a scroll) or an aim
+    local swap = ctx.ToolSwaps and ctx.ToolSwaps()
+    if (swap and LastSwap and swap ~= LastSwap) or aiming then Until.tools = now + Hold(ctx) end
+    LastSwap = swap
     -- a survival ring: low (orange or red, as survival.lua reads it from the game) keeps it, and a share that goes up
     -- (eating, drinking, sleeping) brings it for the wait
     for i, b in pairs(ctx.Rings()) do
@@ -209,6 +219,7 @@ function M.Tick(ctx)
     -- the map setting "Keep in immersive mode" at Compass: the game's compass stays, the map and the tracker do not. A
     -- compass hidden in F9 stays hidden: apply.lua's hide comes after this share.
     if on and ctx.CompassStays() then Until.compass = now + 1 end
+    if on and not (ctx.ToolbarFades and ctx.ToolbarFades()) then Until.tools = now + 1 end
     for g in pairs(Level) do Level[g] = Ease(Level[g], Target(g, on, now), dt) end
     StepBuffs(ctx, on, now, dt)
 

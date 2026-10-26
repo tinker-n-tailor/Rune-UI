@@ -7,7 +7,8 @@
 -- A bar that exists already is dressed once (Dress): a normal bar with the enemy material gets the player's material
 -- (PlayerFillOn), a boss bar one colour on its own fill, and a bar with the player's material the texture power of the
 -- player's bars (bars.lua, ctx.Noise) and the width fix below. The classes may not be loaded until
--- the first creature is near, so a missing object is asked for again on the next scan and costs no try. The game frees
+-- the first creature is near, so they are looked for only once a bar of theirs is listed (Scan), and a missing object
+-- is asked for again on the next scan and costs no try. The game frees
 -- a bar when its creature goes, so Handled keeps only the bars that are still listed.
 -- The Rune Skin switch "Enemy health bars" (elements.lua "enemybars", on at first) shows the bars or not. Off, each bar
 -- is see-through: its opacity, not its visibility, as the game shows and hides a bar by its visibility. On again, a
@@ -184,12 +185,13 @@ local function Show(W, key, on)
     if o > 0 then W:SetRenderOpacity(0) end
 end
 
-local function DressAll(ctx)
+-- found: the bars of each class of WIDGETS, as Scan listed them ({ list, keys })
+local function DressAll(ctx, found)
     local step = Steps.Widgets
     local live = {}
     local on = ctx.On == nil or ctx.On() ~= false
-    for _, class in ipairs(WIDGETS) do
-        local list, keys = ctx.Find(class)
+    for c, class in ipairs(WIDGETS) do
+        local list, keys = found[c][1], found[c][2]
         for i, W in ipairs(list) do
             local key = keys[i]
             live[key] = true
@@ -208,14 +210,25 @@ local function DressAll(ctx)
     for key in pairs(Faded) do if not live[key] then Faded[key] = nil end end
 end
 
--- Once per widget scan (main.lua). Not at the main menu: the classes are not loaded there, and a look for an object
--- that the game has not loaded walks every object, 30 to 43 ms a scan (09-10-2026). ctx.InWorld: the HUD is there.
+-- Once per widget scan (main.lua). A look for an object that the game has not loaded walks every object, 30 to 43 ms
+-- a scan (09-10-2026), and the boss bar's class can stay unloaded all session. So a class is looked for only once a bar
+-- of it is listed, which proves it is loaded; the bars made before that are dressed one by one (DressAll).
+-- ctx.InWorld: the HUD is there.
 function M.Scan(ctx)
     if not ctx.InWorld() then return end
-    Once(ctx, Steps.Normal, "class defaults of the enemy bar", OneColorDefaults(DEFAULTS.Normal))
-    Once(ctx, Steps.Boss, "class defaults of the boss bar", OneColorDefaults(DEFAULTS.Boss))
-    Once(ctx, Steps.Master, "the player's fill in the enemy bar", PlayerFill)
-    DressAll(ctx)
+    local found = {}
+    for c, class in ipairs(WIDGETS) do
+        local list, keys = ctx.Find(class)
+        found[c] = { list, keys }
+    end
+    if #found[1][1] > 0 then
+        Once(ctx, Steps.Normal, "class defaults of the enemy bar", OneColorDefaults(DEFAULTS.Normal))
+        Once(ctx, Steps.Master, "the player's fill in the enemy bar", PlayerFill)
+    end
+    if #found[2][1] > 0 then
+        Once(ctx, Steps.Boss, "class defaults of the boss bar", OneColorDefaults(DEFAULTS.Boss))
+    end
+    DressAll(ctx, found)
 end
 
 -- a new world or a player restart: a blueprint class can load again at a new address, so everything is written again.
