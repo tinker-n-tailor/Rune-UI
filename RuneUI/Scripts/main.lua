@@ -1,7 +1,7 @@
 -- Rune UI: move, resize and hide parts of the Dragonwilds HUD, with a new minimap, survival rings and bars.
 -- F9 opens the layout editor, F5 Rune Skin, F8 Rune Map, F6 the immersive mode. A timer applies the layout; gold corners mark the selected element.
 
-local VERSION = "1.15"
+local VERSION = "1.16"
 
 local function Log(msg) print("[RuneUI] " .. msg .. "\n") end
 Log("starting " .. VERSION .. " on " .. tostring(_VERSION))
