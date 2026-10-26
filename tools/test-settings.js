@@ -199,15 +199,18 @@ local both = M.Legacy(files({ ["runeui_layout.txt"] = "vitals:1,1,1,1\\n", ["hud
 check("legacy: the new file wins over the hudeditor one", both["layout 1"].vitals.x == 1)
 check("legacy: the hudeditor layout is only profile 1's fallback", M.Legacy(files({ ["hudeditor_layout_v2.txt"] = "" }))["layout 2"] == nil)
 
--- Load and Save against files in memory; renameFails mimics Windows, where os.rename does not replace a file
-local disk, renameFails = {}, false
+-- Load and Save against files in memory; renameFails mimics Windows, where os.rename does not replace a file. An open
+-- to write empties the file at once, as on a disk; full: a write fails, closeFails: only the close fails
+local disk, renameFails, full, closeFails = {}, false, false, false
 io.open = function(name, mode)
     if mode == "r" then
         if disk[name] == nil then return nil end
-        return { read = function() return disk[name] end, close = function() end }
+        return { read = function() return disk[name] end, close = function() return true end }
     end
     local buf = {}
-    return { write = function(self, s) buf[#buf + 1] = s return self end, close = function() disk[name] = table.concat(buf) end }
+    disk[name] = ""
+    return { write = function(self, s) if full then return nil, "No space left on device" end buf[#buf + 1] = s return self end,
+        close = function() disk[name] = table.concat(buf) if closeFails then return nil, "No space left on device" end return true end }
 end
 os.rename = function(a, b)
     if disk[a] == nil or (renameFails and disk[b] ~= nil) then return nil, "exists" end
@@ -235,6 +238,38 @@ t.general.profile = 3
 check("save: false when the rename and the direct write fail", M.Save(t) == false)
 check("save: ... and the player still has a settings file, the new one", M.Load() ~= nil and M.Load().general.profile == 3)
 io.open = openOk
+-- a full disk: the save fails, and the file the player has stays whole
+disk = { ["runeui.txt"] = "[general]\\nprofile=1\\n" }
+full = true
+check("save: false on a full disk", M.Save(t) == false)
+check("save: ... and the old file is whole, with no .tmp left", M.Load().general.profile == 1 and disk["runeui.txt.tmp"] == nil)
+full, closeFails = false, true
+check("save: false when only the close fails, and the old file is whole", M.Save(t) == false and M.Load().general.profile == 1)
+closeFails = false
+-- the .tmp is the only copy (a save cut before the rename), and the disk is full: the settings stay
+local plainOpen = io.open
+os.rename = function(a, b) if disk[a] == nil or disk[b] ~= nil then return nil, "exists" end disk[b], disk[a] = disk[a], nil return true end
+disk = { ["runeui.txt.tmp"] = "[general]\\nprofile=2\\n" }
+full = true
+check("save: the .tmp as the only copy, on a full disk: false, and the settings are still there", M.Save(t) == false and M.Load().general.profile == 2)
+full = false
+-- a .tmp that cannot be opened (locked or read-only): the .new file takes its place
+disk = { ["runeui.txt"] = "[general]\\nprofile=1\\n" }
+io.open = function(name, mode) if mode ~= "r" and name == "runeui.txt.tmp" then return nil end return plainOpen(name, mode) end
+t.general.profile = 3
+check("save: a .tmp that cannot be opened: the .new file is used, and none is left", M.Save(t) == true and M.Load().general.profile == 3 and disk["runeui.txt.new"] == nil)
+io.open = plainOpen
+-- no rename at all, and the write in place is cut at the close: the cut file goes, so Load reads the whole .tmp
+os.rename = function() return nil, "denied" end
+disk = { ["runeui.txt"] = "[general]\\nprofile=1\\n" }
+io.open = function(name, mode)
+    local f = plainOpen(name, mode)
+    if mode ~= "r" and name == "runeui.txt" then local close = f.close f.close = function(self) close(self) return nil, "No space left on device" end end
+    return f
+end
+t.general.profile = 2
+check("save: no rename and a cut write in place: false, and Load reads the whole .tmp", M.Save(t) == false and disk["runeui.txt"] == nil and M.Load().general.profile == 2)
+io.open = plainOpen
 io.open = function() return nil end
 check("save: false when nothing can be written", M.Save(t) == false)
 

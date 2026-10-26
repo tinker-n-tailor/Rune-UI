@@ -66,11 +66,12 @@ local sizeBox = Obj("SizeBox_1"); function sizeBox:GetContent() return orbImg en
 local orb = Obj("WBP_LockOnTargetOrb_C", { WidgetTree = { RootWidget = sizeBox } })
 local diamondTex = Obj("diamond")
 local ringLost = false
+local orbImports = 0   -- the loads of the lock-on's diamond: its texture is held by the orb's tree
 StaticFindObject = function(p)
   if p == "/Game/UI/T_Reticule_Asset.T_Reticule_Asset" then return origTex end
   if p == "/Game/UI/T_Arcs.T_Arcs" then return arcsTex end
   if p == "/Game/UI/T_HUD_Reticle_Magic.T_HUD_Reticle_Magic" then return not ringLost and ringTex or nil end
-  return { ImportFileAsTexture2D = function() return diamondTex end }
+  return { ImportFileAsTexture2D = function(_, outer) if outer == orb.WidgetTree then orbImports = orbImports + 1 end return diamondTex end }
 end
 FName = function(s) return s end
 local on = true
@@ -101,8 +102,10 @@ local freed = diamondTex
 freed._name = "another object"
 diamondTex = Obj("diamond")
 staff.Brush.ResourceObject = arcsTex
+orbImg.Brush.ResourceObject = origTex   -- the lock-on too
 Aim.Tick(ctx)
 assert(staff.Brush.ResourceObject == diamondTex, "the aimed spell's mark got the object in the freed slot")
+assert(orbImg.Brush.ResourceObject == diamondTex, "the lock-on got the object in the freed slot")
 on = false
 Aim.Tick(ctx)
 assert(cross.ColorAndOpacity.R == 1 and cross.ColorAndOpacity.A == 0.75, "crosshair not restored")
@@ -142,6 +145,13 @@ Aim.Tick(ctx)
 on = false
 Aim.Tick(ctx)
 assert(icon.Brush.ResourceObject == ringTex and icon.ColorAndOpacity.R == 1, "ring template stays a diamond after a lost picture")
+-- the diamond picture does not load: one try, not a read from disk at every step
+Aim.Forget()
+diamondTex = nil
+orbImports = 0
+on = true
+for _ = 1, 5 do Aim.Tick(ctx) end
+assert(orbImports == 1, "the lock-on's diamond was loaded " .. orbImports .. " times, not once")
 print("ALL OK")
 `;
 const full = harness.replace('load(SRC)', 'load(SRCTEXT)');

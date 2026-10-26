@@ -46,7 +46,9 @@ end
 
 function M.SaveCfg()
     Settings.Section(Cfg, "general").version = VERSION
-    if not Settings.Save(Cfg, nil, ElementIds) then Log("could not write " .. Settings.FILE) end
+    if Settings.Save(Cfg, nil, ElementIds) then return true end
+    Log("could not write " .. Settings.FILE)
+    return false
 end
 
 -- the layout of the profile in use, from the file; an element without a row (a part newer than the profile) gets its starting layout
@@ -82,8 +84,7 @@ local function SaveLayout()
         rows[E.Id] = { x = E.X, y = E.Y, scale = E.Scale, visible = E.Visible and 1 or 0, opacity = E.Opacity,
             edgex = E.TX, edgey = E.TY, wait = E.Wait }
     end
-    M.SaveCfg()
-    Log("layout saved, profile " .. Prof.N)
+    if M.SaveCfg() then Log("layout saved, profile " .. Prof.N) end
 end
 
 -- the layout saved into the profile it came from, the next one loaded; a profile never used starts as a copy

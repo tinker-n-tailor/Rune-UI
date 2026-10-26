@@ -14,7 +14,7 @@ const test = String.raw`
 local fails = 0
 local function check(name, cond) if not cond then fails = fails + 1 print("FAIL " .. name) else print("ok   " .. name) end end
 local Real = load(SETTINGS)()
--- the disk: files in memory, as in test-settings.js. FailPath is a file that cannot be written (nor its .tmp).
+-- the disk: files in memory, as in test-settings.js. FailPath is a file that cannot be written (nor its .tmp or .new).
 local disk, FailPath, folders = {}, nil, {}
 io.open = function(name, mode)
     if mode == "r" then
@@ -26,9 +26,9 @@ io.open = function(name, mode)
             return string.sub(disk[name], 1, n)
         end, close = function() end }
     end
-    if FailPath and (name == FailPath or name == FailPath .. ".tmp") then return nil end
+    if FailPath and (name == FailPath or name == FailPath .. ".tmp" or name == FailPath .. ".new") then return nil end
     local buf = {}
-    return { write = function(self, s) buf[#buf + 1] = s return self end, close = function() disk[name] = table.concat(buf) end }
+    return { write = function(self, s) buf[#buf + 1] = s return self end, close = function() disk[name] = table.concat(buf) return true end }
 end
 os.rename = function(a, b) if disk[a] == nil then return nil end disk[b], disk[a] = disk[a], nil return true end
 os.remove = function(a) if disk[a] == nil then return nil end disk[a] = nil return true end

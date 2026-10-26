@@ -35,7 +35,7 @@ local files = { ["runeui.txt"] = SEED ~= "" and SEED or nil }
 io.open = function(name, mode)
     if mode:sub(1, 1) == "r" and not files[name] then return nil end
     if mode:sub(1, 1) == "w" then files[name] = "" end
-    return { read = function() return files[name] end, write = function(_, s) files[name] = files[name] .. s return true end, close = function() end }
+    return { read = function() return files[name] end, write = function(_, s) files[name] = files[name] .. s return true end, close = function() return true end }
 end
 os.rename = function(from, to) files[to], files[from] = files[from], nil return true end
 os.remove = function(name) files[name] = nil return true end

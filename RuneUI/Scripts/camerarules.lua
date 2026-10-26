@@ -221,12 +221,14 @@ end
 -- AimReticle): Aim only, and Aim + tools while no tool is in a hand (right, left: class names) and the build mode is
 -- off (building), as a tree, a rock or a building piece is aimed at with the dot. "all": every dot, the dot of an aim
 -- too (Nothing). The logging axe was in the left hand in the game (camera log of 14-10-2026).
+-- CrosshairNeedsHands: the setting asks what the hands hold and the build mode, so crosshair.lua reads them only then.
 function M.HoldsTool(right, left) return Starts(right or "", TOOLS) or Starts(left or "", TOOLS) end
+function M.CrosshairNeedsHands() return M.Set.crosshair == "Aim + tools" end
 function M.CrosshairHides(right, left, building)
     local c = M.Set.crosshair
     if c == "Show" then return nil end
     if c == "Nothing" then return "all" end
-    if c == "Aim + tools" and (building == true or M.HoldsTool(right, left)) then return nil end
+    if M.CrosshairNeedsHands() and (building == true or M.HoldsTool(right, left)) then return nil end
     return "dots"
 end
 

@@ -399,12 +399,16 @@ dot.Op = 1
 XH.Tick(xctx)
 check("crosshair Aim only: a mark the game shows again is hidden again", dot.Op == 0)
 local hands = { nil, "BP_Logging_Axe_Adamant_C" }   -- the axe in the left hand, as the game holds it
-xctx.Hands = function() return hands[1], hands[2] end
+local handReads, buildReads = 0, 0
+xctx.Hands = function() handReads = handReads + 1 return hands[1], hands[2] end
+xctx.Building = function() buildReads = buildReads + 1 return false end
 XH.Tick(xctx)
 check("crosshair Aim only: a tool changes nothing", dot.Op == 0 and dot2.Op == 0)
+check("crosshair Aim only: the hands and the build mode are not read", handReads == 0 and buildReads == 0)
 R.Set.crosshair = "Aim + tools"
 XH.Tick(xctx)
 check("crosshair Aim + tools: an axe in the left hand gives the game's dots back", dot.Op == 1 and dot2.Op == 0.9 and bowDot.Op == 1)
+check("crosshair Aim + tools: the hands and the build mode are read", handReads == 1 and buildReads == 1)
 hands = { "BP_Sword_Iron_C", nil }
 XH.Tick(xctx)
 check("crosshair Aim + tools: a weapon hides the dots again, the aim dots stay", dot.Op == 0 and dot2.Op == 0 and bowDot.Op == 1 and staffDot.Op == 0.75)
@@ -415,7 +419,7 @@ check("crosshair Nothing: the rings and the count stay", sight.Op == 0.8 and sta
 R.Set.crosshair = "Aim only"
 XH.Tick(xctx)
 check("crosshair Nothing to Aim only: the aim dots at the game's opacity again", bowDot.Op == 1 and staffDot.Op == 0.75 and utilDot.Op == 1 and dot.Op == 0)
-xctx.Hands = nil
+xctx.Hands, xctx.Building = nil, nil
 R.Set.crosshair = "Show"
 XH.Tick(xctx)
 check("crosshair back at Show: the game's opacity back", dot.Op == 1 and dot2.Op == 0.9 and sight.Op == 0.8 and (sight.Sets or 0) == 0

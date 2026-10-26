@@ -52,8 +52,8 @@ local paths = {
     frame = "/Game/UI/AI/WBP_AI_Healthbar.WBP_AI_Healthbar_C:WidgetTree.Border_0",
     player = "/Game/Materials/UI/VitalsBars/MI_Player_Health_bar.MI_Player_Health_bar" }
 local function Load() objects = { [paths.normal] = normalCdo, [paths.boss] = bossCdo, [paths.fill] = masterFill, [paths.frame] = masterFrame, [paths.player] = playerMat } end
-local looks = 0
-StaticFindObject = function(p) looks = looks + 1 return objects[p] end
+local looks, seen = 0, {}
+StaticFindObject = function(p) looks, seen[p] = looks + 1, true return objects[p] end
 
 -- the game's fills: a dynamic material with its own colours, over a parent
 local function Fill(matName, own, base, scalars)
@@ -105,13 +105,19 @@ Scan() Scan() Scan()
 check("the main menu: nothing is looked for", looks == 0 and #logs == 0)
 inWorld = true
 
--- the classes are not loaded yet: nothing written, no try spent, no log
+-- no bar listed yet: the classes are not looked for (a look for an unloaded class walks every object), nothing written
 Scan() Scan() Scan()
-check("not loaded yet: no try spent, nothing logged", failedCount == 0 and #logs == 0 and not M.Problem())
-check("not loaded yet: the defaults are as they were", not ShadowIsMain(normalCdo))
+check("no bar yet: nothing is looked for, no try spent, nothing logged", looks == 0 and failedCount == 0 and #logs == 0 and not M.Problem())
+check("no bar yet: the defaults are as they were", not ShadowIsMain(normalCdo))
+-- a bar is listed but its class does not resolve yet: no try spent, asked again on the next scan
+lists.WBP_AI_Healthbar_C = { { {} }, { "stub" } }
+Scan()
+check("not loaded yet: no try spent, nothing logged", looks > 0 and failedCount == 0 and #logs == 0 and not M.Problem())
+check("only enemy bars listed: the boss bar's class is never looked for", seen[paths.normal] and not seen[paths.boss])
 
--- the first creature is near: the classes resolve
+-- the first creature is near: the classes resolve. A bar of each class is listed (with no fill yet: nothing to dress)
 Load()
+lists.WBP_AI_Boss_Healthbar_C = { { {} }, { "bossstub" } }
 Scan()
 check("defaults: every type's shadow is its main colour, on both bars", ShadowIsMain(normalCdo) and ShadowIsMain(bossCdo) and normalCdo.Cfgs[2].ShadowColor.R == 0.9)
 check("master: the player's fill, the pivot at the left end, 1 / 0.9 wide, the frame does not clip (it would cut the name)",
@@ -256,7 +262,7 @@ normalCdo.HealthBarTypeConfig = { ForEach = function() error("no map") end }
 bossCdo.Cfgs[1].ShadowColor = { R = 0, G = 0, B = 0, A = 1 }
 M.Forget(false)
 failedCount, logs = 0, {}
-lists.WBP_AI_Healthbar_C = { {}, {} }
+lists.WBP_AI_Healthbar_C = { { {} }, { "stub" } }
 for _ = 1, 6 do Scan() end
 check("a failing write: 3 tries, a line for each, then it gives up", failedCount == 3 and #logs >= 3 and M.Problem())
 check("a failing write does not stop the boss bar's defaults", ShadowIsMain(bossCdo))

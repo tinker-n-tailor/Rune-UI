@@ -87,10 +87,16 @@ function M.Forget() M.Marks, M.AimDots, M.Host, Logged = {}, {}, nil, {} end
 local SAY = { dots = "crosshair: the dot hidden, kept while you aim", all = "crosshair: every dot hidden" }
 
 function M.Tick(ctx)
-    local okH, right, left = pcall(function() if ctx.Hands then return ctx.Hands() end end)
-    if not okH then Once(ctx, "hand", "crosshair: the hands not read: " .. tostring(right)) right, left = nil, nil end
-    local okB, building = pcall(function() return ctx.Building and ctx.Building() end)
-    if not okB then Once(ctx, "build", "crosshair: the build mode not read: " .. tostring(building)) building = false end
+    -- the hands and the build mode are read only for a setting that uses them: the others skip the reads at every step
+    local right, left, building = nil, nil, false
+    if ctx.Rules.CrosshairNeedsHands() then
+        local okH
+        okH, right, left = pcall(function() if ctx.Hands then return ctx.Hands() end end)
+        if not okH then Once(ctx, "hand", "crosshair: the hands not read: " .. tostring(right)) right, left = nil, nil end
+        local okB
+        okB, building = pcall(function() return ctx.Building and ctx.Building() end)
+        if not okB then Once(ctx, "build", "crosshair: the build mode not read: " .. tostring(building)) building = false end
+    end
     local hide = ctx.Rules.CrosshairHides(right, left, building)
     if not hide then
         if M.Hidden then
