@@ -35,6 +35,7 @@ local CREAM = Lin(0.945, 0.902, 0.784)      -- #f1e6c8, the numbers
 local TRACK = Lin(0.086, 0.071, 0.051, 0.5) -- #16120d at 50%, behind the durability
 
 M.Slots = {}   -- bar number -> place in the bar (0 to 7) -> what Paint found in that slot
+M.Swaps = 0    -- how many times the slot in use changed: a new one brings the tool bar back in immersive mode
 local Bars = {}      -- bar number -> what the bar keeps between looks (Refresh, Tick)
 local Names = nil   -- the material's value names, made on first use
 local Logged = {}
@@ -270,7 +271,9 @@ function M.Tick(ctx)
                 B.OpAt = now + OPACITY
                 local okO, op = pcall(Opacity, B, bar)
                 if not okO then Once(ctx, "opacity", "tool bar: opacity not read: " .. tostring(op)) B.Op = 1
-                elseif op then B.Op = op
+                elseif op then
+                    if op ~= B.Op then B.OpAt = now end   -- a fade: read again at the next look, so the edges follow it
+                    B.Op = op
                 else B.OpAt = 0 end
             end
             if Ok(B.Grid) then
@@ -280,6 +283,13 @@ function M.Tick(ctx)
                     if not ok then Once(ctx, "slot", "tool bar: a slot not painted: " .. tostring(err)) end
                 end
                 if B.Count > 0 then B.Fresh = nil end
+                local used = -1
+                for i = 0, B.Count - 1 do
+                    local S = B.Slots[i]
+                    if S and S.Used then used = i break end
+                end
+                if B.InUse and used ~= B.InUse then M.Swaps = M.Swaps + 1 end
+                B.InUse = used
             end
         end
     end

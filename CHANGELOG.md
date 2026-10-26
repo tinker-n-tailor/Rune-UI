@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- A switch in F6 to fade the tool bar in immersive mode.
+
 ## [1.15] - 2026-10-22
 
 ### Added

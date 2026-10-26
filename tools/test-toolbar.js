@@ -211,6 +211,24 @@ check("an edge that keeps its look is left alone", Edges(3)[1].draws == d3)
 T(2).eq.vis, T(1).eq.vis = 1, 4
 Step()
 
+-- a new slot in use is a swap: it brings the bar back in the immersive mode
+local s0 = M.Swaps
+T(1).eq.vis, T(2).eq.vis = 1, 4
+Step()
+check("a new slot in use counts one swap", M.Swaps == s0 + 1)
+Step() Step()
+check("the same slot held counts no more", M.Swaps == s0 + 1)
+T(2).eq.vis, T(1).eq.vis = 1, 4
+Step()
+check("back to the first slot: one more", M.Swaps == s0 + 2)
+
+-- the immersive mode fades the bar: the edges ignore that opacity, so they follow it by their colour
+local r1 = bar.reads or 0
+for k = 1, 7 do bar.op = 1 - k * 0.1 Step(0.16) end
+check("while the bar fades, its opacity is read at every look", (bar.reads or 0) - r1 >= 6)
+check("and the edges follow it", near(Edges(3)[1].set.Colour.A, 0.45 * 0.3))
+bar.op = 1 Second()
+
 T(1).pb.FillColorAndOpacity = { R = 0.9, G = 0.1, B = 0.05, A = 1 }   -- the game: this item breaks soon
 Step()
 check("a colour the game writes on the durability stays", T(1).pb.FillColorAndOpacity.G == 0.1 and T(3).pb.FillColorAndOpacity.G == 0.40)

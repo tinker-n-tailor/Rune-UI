@@ -18,6 +18,8 @@ M.ROWS = {
     -- "Aim only" was "Hide" in older files: an old file or Mod Menu value reads as "Aim only" (Old)
     { Key = "crosshair", Label = "Crosshair", Kind = "choice", Options = { "Show", "Aim + tools", "Aim only", "Nothing" }, Default = "Show",
         Old = { hide = "Aim only" } },
+    -- the immersive mode's tool bar: off, it never fades (immersive.lua)
+    { Key = "toolbar", Label = "Fade the tool bar", Kind = "switch", Default = false },
     { Key = "on", Label = "Immersive camera", Kind = "switch", Default = false },
     { Key = "walk", Label = "Walk distance", Kind = "number", Min = 100, Max = 1500, Step = 25, Unit = "cm", Default = 300 },
     { Key = "side", Label = "Side offset", Kind = "number", Min = 0, Max = 200, Step = 10, Unit = "cm", Default = 90 },
@@ -255,6 +257,10 @@ function M.Hint(i)
     if r.Key == "immersive" then
         if M.Mode.Visible then return "The HUD fades when nothing happens, and comes back when something does." end
         return "The whole HUD stays on the screen."
+    end
+    if r.Key == "toolbar" then
+        if M.Set.toolbar then return "The tool bar fades too. A tool swap, an aim or a hit brings it back." end
+        return "The tool bar stays on the screen in the immersive mode."
     end
     if r.Key == "on" then
         if not M.Set.on then return "The game's own camera. On: closer, your character on the left." end

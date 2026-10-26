@@ -28,11 +28,12 @@ local R = Fresh(RULES)
 ---------------------------------------------------------------- settings
 check("defaults", R.Set.on == false and R.Set.walk == 300 and R.Set.side == 90 and R.Set.sprint == 900 and R.Set.melee == 200
     and R.Set.ranged == 500 and R.Set.hold == 8 and R.Set.crosshair == "Show")
-check("eight camera rows, the crosshair first, no easing row", #R.ROWS == 8 and R.ROWS[1].Label == "Crosshair" and R.ROWS[2].Label == "Immersive camera"
-    and R.ROWS[3].Label == "Walk distance" and R.ROWS[4].Label == "Side offset" and R.ROWS[5].Label == "Sprint distance" and R.ROWS[6].Label == "Melee distance"
-    and R.ROWS[7].Label == "Ranged distance" and R.ROWS[8].Label == "Hold after a fight" and R.Set.zoomease == nil)
-check("the panel: the two rows of the immersive mode, then the camera rows", #R.PANEL == 10 and R.PANEL[1].Label == "Immersive mode"
-    and R.PANEL[2].Label == "Wait before the fade" and R.PANEL[3] == R.ROWS[1] and R.PANEL[10] == R.ROWS[8])
+check("nine camera rows, the crosshair and the tool bar first, no easing row", #R.ROWS == 9 and R.ROWS[1].Label == "Crosshair" and R.ROWS[2].Label == "Fade the tool bar"
+    and R.ROWS[3].Label == "Immersive camera" and R.ROWS[4].Label == "Walk distance" and R.ROWS[5].Label == "Side offset" and R.ROWS[6].Label == "Sprint distance"
+    and R.ROWS[7].Label == "Melee distance" and R.ROWS[8].Label == "Ranged distance" and R.ROWS[9].Label == "Hold after a fight" and R.Set.zoomease == nil)
+check("the tool bar does not fade at first", R.Set.toolbar == false)
+check("the panel: the two rows of the immersive mode, then the camera rows", #R.PANEL == 11 and R.PANEL[1].Label == "Immersive mode"
+    and R.PANEL[2].Label == "Wait before the fade" and R.PANEL[3] == R.ROWS[1] and R.PANEL[11] == R.ROWS[9])
 local saves = 0
 -- an old file with zoomease and returnease lines: they load without an error and are not settings
 local store = Settings.Parse("[camera]\\non=1\\nwalk=310\\nside=-40\\nsprint=99999\\nmelee=abc\\nhold=12.6\\nzoomease=4.6\\nreturnease=19\\ncrosshair=hide\\n").camera
@@ -52,7 +53,8 @@ R.Attach(Settings.Parse("").camera or file, function() saves = saves + 1 end)
 check("read: no [camera] section gives every default", R.Set.on == false and R.Set.walk == 300 and R.Set.crosshair == "Show")
 R.Set.on, R.Set.crosshair, R.Dirty = true, "Aim only", true
 R.Commit()
-check("save: once, a switch as 1, a choice as its word", saves == 2 and file.on == 1 and file.crosshair == "Aim only" and file.walk == 300 and file.hold == 8)
+check("save: once, a switch as 1, a choice as its word", saves == 2 and file.on == 1 and file.crosshair == "Aim only" and file.walk == 300 and file.hold == 8
+    and file.toolbar == 0)
 R.Commit()
 check("save: nothing new, no save", saves == 2)
 local text = Settings.Format({ map = { zoom = 2 }, camera = file, keys = { editor = "F9" } })
@@ -70,15 +72,17 @@ R.Commit()
 check("reset: every row back to its default, and saved", R.Set.walk == 300 and R.Set.on == false and R.Set.crosshair == "Show" and file.on == 0 and file.walk == 300 and saves == 3)
 
 -- Mod Menu
-R.MenuSet("on", true) R.MenuSet("walk", 312.0) R.MenuSet("hold", 99) R.MenuSet("crosshair", "Hide") R.MenuSet("nope", 1) R.MenuSet("zoomease", 5)
-check("Mod Menu: a toggle, a slider snapped, clamped, an old choice value as the new one, an unknown key ignored", R.MenuGet("on") == true and R.MenuGet("walk") == 300
+R.MenuSet("on", true) R.MenuSet("toolbar", true) R.MenuSet("walk", 312.0) R.MenuSet("hold", 99) R.MenuSet("crosshair", "Hide") R.MenuSet("nope", 1) R.MenuSet("zoomease", 5)
+check("Mod Menu: a toggle, a slider snapped, clamped, an old choice value as the new one, an unknown key ignored", R.MenuGet("on") == true and R.MenuGet("toolbar") == true and R.MenuGet("walk") == 300
     and R.MenuGet("hold") == 30 and R.MenuGet("crosshair") == "Aim only" and R.Set.nope == nil and R.Set.zoomease == nil and R.Dirty == true)
 R.Commit()
-check("Mod Menu: saved like a key", file.walk == 300 and file.hold == 30)
+check("Mod Menu: saved like a key", file.walk == 300 and file.hold == 30 and file.toolbar == 1)
 
 -- the panel's keys
 R.ResetWanted = true R.Commit()
 R.Sel = 4 R.Change(1)
+check("keys: left or right switches the tool bar fade", R.Set.toolbar == true and R.Dirty)
+R.Pick(1) R.Change(1)
 check("keys: left or right switches the camera", R.Set.on == true and R.Dirty)
 R.Pick(1) R.Change(1) R.Change(1)
 check("keys: a distance goes 25 a step", R.Set.walk == 350)
@@ -86,12 +90,12 @@ for _ = 1, 100 do R.Change(1) end
 check("keys: a distance stops at 1500", R.Set.walk == 1500)
 R.Pick(1) for _ = 1, 30 do R.Change(-1) end
 check("keys: the side stops at 0", R.Set.side == 0)
-R.Sel = 10 for _ = 1, 40 do R.Change(-1) end
+R.Sel = 11 for _ = 1, 40 do R.Change(-1) end
 check("keys: the hold goes down to 0 s", R.Set.hold == 0)
 R.Pick(1)
 check("keys: down from the last row goes to the first", R.Sel == 1)
 R.Pick(-1)
-check("keys: up from the first goes to the last", R.Sel == 10)
+check("keys: up from the first goes to the last", R.Sel == 11)
 R.Sel = 3 R.Change(1)
 check("keys: the crosshair goes to Aim + tools", R.Set.crosshair == "Aim + tools")
 R.Change(1) R.Change(1)
@@ -117,22 +121,25 @@ R.LayoutDirty = false
 
 -- the panel
 local K = { editor = "F9", camera = "F6" }
-R.Sel = 5
+R.Sel = 6
 local v = R.View(K, nil)
-check("panel: ten rows under two group titles", #v.Rows == 12 and v.Rows[1].Head and v.Rows[1].Text == "Immersive mode" and v.Rows[2].Text == "Immersive mode"
-    and v.Rows[3].Text == "Wait before the fade" and v.Rows[4].Text == "Crosshair" and v.Rows[5].Head and v.Rows[5].Text == "Immersive camera"
-    and v.Rows[6].Text == "Immersive camera" and v.Rows[12].Text == "Hold after a fight")
+check("panel: eleven rows under two group titles", #v.Rows == 13 and v.Rows[1].Head and v.Rows[1].Text == "Immersive mode" and v.Rows[2].Text == "Immersive mode"
+    and v.Rows[3].Text == "Wait before the fade" and v.Rows[4].Text == "Crosshair" and v.Rows[5].Text == "Fade the tool bar" and v.Rows[6].Head
+    and v.Rows[6].Text == "Immersive camera" and v.Rows[7].Text == "Immersive camera" and v.Rows[13].Text == "Hold after a fight")
 check("panel: the keys fit its " .. EDKEYS .. " cells", #v.Keys <= EDKEYS)
-check("panel: title, the name line and the selected row", v.Mode == "camera" and v.Title == "IMMERSIVE MODE" and v.Name == "Walk distance:  300 cm" and v.Rows[7].Sel and not v.Rows[6].Sel)
-check("panel: values with units, a number between < >", v.Rows[2].Note == "Off" and v.Rows[3].Note == "< 8 s >" and v.Rows[4].Note == "Show" and v.Rows[6].Note == "Off"
-    and v.Rows[7].Note == "< 300 cm >" and v.Rows[12].Note == "< 8 s >")
+check("panel: title, the name line and the selected row", v.Mode == "camera" and v.Title == "IMMERSIVE MODE" and v.Name == "Walk distance:  300 cm" and v.Rows[8].Sel and not v.Rows[7].Sel)
+check("panel: values with units, a number between < >", v.Rows[2].Note == "Off" and v.Rows[3].Note == "< 8 s >" and v.Rows[4].Note == "Show" and v.Rows[5].Note == "Off" and v.Rows[7].Note == "Off"
+    and v.Rows[8].Note == "< 300 cm >" and v.Rows[13].Note == "< 8 s >")
 check("panel: the keys name F9 and F6", v.Keys[4][1][1] == "F9" and v.Keys[5][1][1] == "F6")
 local hints = true
 for i = 1, #R.PANEL do R.Sel = i if (R.View(K).Hint or "") == "" then hints = false end end
 check("panel: every row has a hint", hints)
-R.Sel = 9
+R.Sel = 4
+check("panel: the tool bar hint says what it does, off and on", R.View(K).Hint == "The tool bar stays on the screen in the immersive mode."
+    and (function() R.Set.toolbar = true local h = R.View(K).Hint R.Set.toolbar = false return string.find(h, "A tool swap, an aim or a hit", 1, true) ~= nil end)())
+R.Sel = 10
 check("panel: the ranged hint names the aim and the staff in the hand", R.View(K).Hint == "The distance while you aim a bow or hold a staff. It holds for a few seconds.")
-R.Sel = 4 R.Set.on = true
+R.Sel = 5 R.Set.on = true
 check("panel: on with the immersive mode off, the hint says the camera works without it", string.find(R.View(K).Hint, "With or without the immersive mode", 1, true))
 check("panel: the state changes with a value and with the immersive mode", (function() local a = R.State() element.Visible = true local b = R.State() R.Set.walk = 325 return a ~= b and b ~= R.State() end)())
 element.Visible = false

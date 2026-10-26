@@ -119,7 +119,7 @@ Press(RIGHT)
 check("Right: the immersive mode is on, in the layout's row of the profile", view.Name == "Immersive mode:  On" and Row("immersive"):find("visible=1", 1, true) ~= nil)
 Press(DOWN) Press(RIGHT) Press(RIGHT)
 check("the wait goes up a second a press, and is saved in the same row", view.Name == "Wait before the fade:  10 s" and Row("immersive"):find("wait=10", 1, true) ~= nil)
-for _ = 1, 8 do Press(DOWN) end
+for _ = 1, 9 do Press(DOWN) end
 check("Down to the last row: the list has moved, the row is in it", view.Name == "Hold after a fight:  8 s" and Has("Hold after a fight").Sel and #view.Rows <= Editor.ROWS)
 Press(BACK)
 check("Backspace: the mode off and the wait at 8 again, and saved", Row("immersive"):find("visible=0", 1, true) ~= nil and Row("immersive"):find("wait=8", 1, true) ~= nil)

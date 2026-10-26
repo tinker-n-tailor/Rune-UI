@@ -182,6 +182,32 @@ ctx.AmmoChange, ctx.Aiming = nil, nil
 run(1)
 check("no ammo part and no camera: nothing wakes it, nothing fails", F("ammo") == 0)
 
+-- the tool bar: with its F6 switch off it stays; on, a tool swap, an aim or a hit brings it back
+local fades, swaps = false, 0
+ctx.ToolbarFades = function() return fades end
+ctx.ToolSwaps = function() return swaps end
+ctx.Aiming = function() return aiming end
+run(10)
+check("the switch off: the tool bar stays", F("toolbar") == 1)
+fades = true run(4)
+check("the switch on: the tool bar fades with the HUD", F("toolbar") == 0)
+swaps = 1 run(0.5)
+check("a tool swap: the tool bar is back, the bars not", F("toolbar") == 1 and rowH.op == 0)
+run(9)
+check("after the wait: it fades", F("toolbar") == 0)
+aiming = true run(0.5)
+check("an aim: back", F("toolbar") == 1)
+aiming = false run(9)
+check("the aim over: it fades", F("toolbar") == 0)
+hpText.s = "150/200" run(0.5)
+check("a hit: back with the bars", F("toolbar") == 1 and rowH.op > 0)
+hpText.s = "200/200" run(9)
+check("health full again: it fades with the bars", F("toolbar") == 0 and rowH.op == 0)
+fades = false run(0.5)
+check("the switch off again: it is back at once", F("toolbar") == 1)
+ctx.ToolbarFades, ctx.ToolSwaps, ctx.Aiming = nil, nil, nil
+run(1)
+
 -- the party panel: a friend whose health goes down brings it back; the map does not keep it
 check("idle: the party panel is gone", F("party") == 0)
 run(1)

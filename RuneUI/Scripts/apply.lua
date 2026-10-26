@@ -165,8 +165,9 @@ end
 -- inBag: the tool bar while the bag is open. It shows even when hidden on the HUD: the bag needs its slots.
 local function ApplyOne(W, k, x, y, scale, E, isSelected, force, EditMode, MapMode, look, inBag)
     local map = E.Custom == "map"
-    -- the immersive mode's share, exactly 1 when shown; RuneMap takes it in its own opacity (see MapCtx)
-    local imm = (Immersive and not map) and Immersive.Factor(E) or 1.0
+    -- the immersive mode's share, exactly 1 when shown; RuneMap takes it in its own opacity (see MapCtx). The tool bar
+    -- in the bag is the bag's, and never fades.
+    local imm = (Immersive and not map and not inBag) and Immersive.Factor(E) or 1.0
     local op = map and 1.0 or OwnOpacity(E)
     local px, py
     if E.Full and E.Center then px, py = Layout.Pivot(E) end
