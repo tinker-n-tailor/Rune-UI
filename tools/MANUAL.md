@@ -76,6 +76,7 @@ Rune Skin (F5), Rune Map settings (F8) and immersive mode settings (F6):
 | --- | --- |
 | Wheels | Spell, item and emote wheels as rings. Off: the game's wheels. On at first. |
 | Combat text | Bigger damage numbers. On at first. |
+| Damage numbers | Off: no damage numbers and no Critical word over enemies. The status words stay. On at first. |
 | XP under the bars | XP bar under the bars. Off: the game's XP circle. On at first. |
 | Floating XP | The game's XP over a hit enemy. Off at first. |
 | Enemy health bars | The health bars over enemies. On at first. |
@@ -85,6 +86,7 @@ Rune Skin (F5), Rune Map settings (F8) and immersive mode settings (F6):
 | Game icons beside the bars | Shows them. Off at first. |
 | Bar numbers | Numbers on the health and stamina bars. Off at first. |
 | Party numbers | Each friend's health in a taller party bar. A value that looks wrong shows as a percent. Off at first. |
+| Survival numbers | The value of food, water and rest inside each ring. Off at first. |
 | Spell cooldowns in a row | Tiles in a row. Off at first. |
 
 | Rune Map setting | What it does |

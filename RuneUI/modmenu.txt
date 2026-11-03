@@ -33,6 +33,8 @@
       "tooltip": "On: the spell, quick access and emote wheels have the look of Rune UI: each slot is a ring, with nothing behind the rings. Off: the game's wheels. Each layout profile has its own." },
     { "key": "combat_text", "type": "toggle", "label": "Combat text", "default": true,
       "tooltip": "On: the damage numbers are white and bigger, with an edge and a shadow, a critical hit is gold and pops. Off: the game's numbers. Each layout profile has its own." },
+    { "key": "damage_numbers", "type": "toggle", "label": "Damage numbers", "default": true,
+      "tooltip": "On: the damage numbers show over a hit enemy. Off: no damage number and no Critical word shows. The poison, burn and bleed words stay. It works with Combat text on or off. Each layout profile has its own." },
     { "key": "rune_xp", "type": "toggle", "label": "XP under the bars", "default": true,
       "tooltip": "On: the XP shows under the bars, and the gold line fills as the XP bar. Off: the game's XP circle. Each layout profile has its own." },
     { "key": "floating_xp", "type": "toggle", "label": "Floating XP", "default": false,
@@ -51,6 +53,8 @@
       "tooltip": "On: numbers show on the health and stamina bars. Each layout profile has its own." },
     { "key": "party_numbers", "type": "toggle", "label": "Party numbers", "default": false,
       "tooltip": "On: the party panel's bars are taller, with each friend's health in them. When the game sends a value that looks wrong, the bar shows the percent. Each layout profile has its own." },
+    { "key": "survival_numbers", "type": "toggle", "label": "Survival numbers", "default": false,
+      "tooltip": "On: each of the food, water and rest rings shows its number inside the ring, under a smaller icon. In a low need the number has the colour of its ring. Each layout profile has its own." },
     { "key": "horizontal_cooldowns", "type": "toggle", "label": "Spell cooldowns in a row", "default": false,
       "tooltip": "On: the spell cooldown tiles are in a row from left to right, the newest at the right end, instead of one column. The left end of the box stays where it is, so a saved position stays. Each layout profile has its own." },
 

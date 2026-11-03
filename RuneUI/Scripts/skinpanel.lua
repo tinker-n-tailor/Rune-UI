@@ -9,6 +9,7 @@ local M = {}
 M.ROWS = {
     { Id = "wheels", On = "The spell, item and emote wheels have the look of Rune UI.", Off = "The game's own wheels." },
     { Id = "combattext", On = "Bigger damage numbers. A critical hit is gold and pops.", Off = "The game's own damage numbers." },
+    { Id = "dmgnumbers", On = "Damage numbers show over a hit enemy.", Off = "No damage numbers over enemies. The poison and burn words stay." },
     { Id = "runexp", On = "The XP shows under the bars.", Off = "The game's XP circle." },
     { Id = "floatxp", On = "The game's XP floats over a hit enemy.", Off = "No XP over a hit enemy." },
     { Id = "enemybars", On = "Health bars show over enemies.", Off = "No health bars over enemies." },
@@ -18,6 +19,7 @@ M.ROWS = {
     { Id = "baricons", On = "The game's icons show beside the bars.", Off = "No icons beside the bars." },
     { Id = "barnumbers", On = "Numbers show on the health and stamina bars.", Off = "No numbers on the bars." },
     { Id = "partynumbers", On = "Each friend's health shows in the party panel's bars.", Off = "No numbers on the party panel." },
+    { Id = "survnumbers", On = "Food, water and rest show their number in the ring.", Off = "The rings show no numbers." },
     { Id = "cdhoriz", On = "The cooldown tiles are in a row. Move them in Layout.", Off = "The cooldown tiles are in a column. Move them in Layout." },
 }
 

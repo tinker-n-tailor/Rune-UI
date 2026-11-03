@@ -1,5 +1,7 @@
 -- Food, water and rest in the style of the map: a gold rim, a coloured ring
--- that fills with the value, a see-through dark centre with the game's icon; no numbers.
+-- that fills with the value, a see-through dark centre with the game's icon.
+-- With the Rune Skin switch "Survival numbers" (elements.lua "survnumbers", off at first) the game's current value shows
+-- as a number inside the ring, under the icon, which is smaller and higher then. Off, the ring has no number.
 -- The game's own ring stays alive but unseen; ours is drawn from pictures (tools/make-runemap-art.js).
 -- The coloured ring is two half rings, each in a box that cuts it at the middle: turning a half shows as
 -- much of it as the value, so the ring fills clockwise from the top like a clock hand.
@@ -10,6 +12,13 @@ local M = {}
 local ART_DIR = (RUNEUI_DIR or "ue4ss/Mods/RuneUI/") .. "Art/"
 local RING = 68        -- the game's radial bar is 68 units; the pictures cover exactly that
 local ICON = 68        -- the picture has wide empty edges, so the icon is this big
+-- The number (the approved sketch, option A): the icon shrinks and moves up, the number sits under it in the dark centre,
+-- clear of the ring. NUM_RIGHT moves it right: centred as is, it sits 2 units left of the icon (its shadow falls right and
+-- down). NUM_EDGE is the dark edge that keeps it readable on the ring's colour.
+local NUM_SIZE, NUM_TOP, NUM_RIGHT = 12, 0.47 * RING, 2
+local ICON_SCALE, ICON_LIFT = 0.62, 0.118 * RING
+local NUM_EDGE = { R = 0, G = 0, B = 0, A = 0.9 }
+local COLLAPSED, HIT_TEST_INVISIBLE = 1, 3   -- ESlateVisibility: not there at all, and seen with the mouse going through it
 
 -- Unreal takes widget colours as linear light; these are screen colours (sRGB), converted
 local function Lin1(c) if c <= 0.04045 then return c / 12.92 end return ((c + 0.055) / 1.055) ^ 2.4 end
@@ -84,6 +93,20 @@ local function Add(ov, w, h, v, pad)
     return s
 end
 M.Picture, M.Sized, M.Add = Picture, Sized, Add   -- the other parts that draw rings and tiles use them too
+
+-- The number of a ring: a text of ours under the icon, centred. Nothing shows until it is on and read.
+local function MakeNumber(ctx, tree, ov, n)
+    local T = ctx.Text(tree, n .. "Num", NUM_SIZE, ICON_TINT, "")
+    pcall(function()
+        local fi = T.Font   -- our own text, so changing it touches nothing of the game
+        fi.OutlineSettings.OutlineSize = 1
+        fi.OutlineSettings.OutlineColor = NUM_EDGE
+        T:SetFont(fi)
+    end)
+    T:SetVisibility(COLLAPSED)
+    Add(ov, T, 2, 1, { Left = 2 * NUM_RIGHT, Top = NUM_TOP, Right = 0, Bottom = 0 })
+    return T
+end
 
 -- A widget by name, inside game widgets too
 local function Find(W, name, depth)
@@ -196,15 +219,20 @@ local function Decorate(ctx, U)
                     Add(ov, ourIcon, 2, 2)
                 end)
             end
+            local number
+            if ctx.Text then
+                local okN, errN = pcall(function() number = MakeNumber(ctx, tree, ov, n) end)
+                if not okN then Once(ctx, "number" .. K.Name, "survival: " .. K.Name .. " number not made: " .. tostring(errN)) end
+            end
             local box = Sized(tree, n, RING, RING, ov)
             -- our ring from an earlier round (a player restart keeps the game's widget): out first
             ctx.ClearOurs(root, "RU_Up")
             Add(root, box, 2, 1)        -- over the game's ring: centred, at the top of the element
             bar:SetRenderOpacity(0.0)   -- only once ours is in: the game's ring stays alive for the game, unseen
-            -- no numbers: the ring shows how full it is. The game still writes them, and the ring reads them.
+            -- the game's own numbers stay unseen: it still writes them, and the ring reads them (ours is the number under the icon)
             pcall(function() Find(root, "SizeBox_1"):SetRenderOpacity(0.0) end)
             Built[i] = { Right = rImg, Left = lImg, Icon = ourIcon, Texts = texts, Value = nil, Colour = K.Colour, Name = K.Name,
-                GameRing = Find(bar, "RadialImage"), GameIcon = icon, Box = box }
+                GameRing = Find(bar, "RadialImage"), GameIcon = icon, Box = box, Number = number, NumOn = false }
             local parts = {}
             for _, T in ipairs(texts) do pcall(function() table.insert(parts, "'" .. T:GetText():ToString() .. "'") end) end
             ctx.Log(string.format("survival: %s ring ready (numbers %s; low colours %s)", K.Name, table.concat(parts, " "), (icon and Built[i].GameRing) and "followed" or "not found"))
@@ -213,7 +241,8 @@ local function Decorate(ctx, U)
     end
 end
 
--- The share full, from the game's own numbers ("50" and "/100", or "50/100"); nil when there are none
+-- The share full, from the game's own numbers ("50" and "/100", or "50/100"); nil when there are none. The second value is
+-- the current value, rounded to a whole number, for the number in the ring.
 local function Share(b)
     local s = ""
     for _, T in ipairs(b.Texts) do pcall(function() s = s .. " " .. T:GetText():ToString() end) end
@@ -221,7 +250,7 @@ local function Share(b)
     for d in string.gmatch(s, "%d+%.?%d*") do table.insert(nums, tonumber(d)) end
     if #nums == 0 then return nil end
     local max = (#nums >= 2 and nums[#nums] > 0) and nums[#nums] or 100
-    return math.max(0, math.min(1, nums[1] / max))
+    return math.max(0, math.min(1, nums[1] / max)), string.format("%d", math.floor(nums[1] + 0.5))
 end
 
 -- Low water, food or rest: the game turns its icon red and its ring orange (25 or less) or dark red (10 or
@@ -255,6 +284,35 @@ local function Warn(b)
     b.Right:SetColorAndOpacity(ring)
     b.Left:SetColorAndOpacity(ring)
     if b.Icon then b.Icon:SetColorAndOpacity(icon) end
+end
+
+-- The number under the icon, with the switch "Survival numbers". On: the icon is smaller and higher, and the text shows the
+-- value that the ring is filled from (b.Digits, the same reading); it takes the ring's colour while the need is low and the
+-- cream of the icon otherwise. Off: the text is gone and the icon is as it was. b.Digits is nil until the first reading, so
+-- no wrong value shows. The text is inside the ring's box, so the immersive mode fades it with the ring.
+local function ShowNumber(ctx, b, on)
+    local T = b.Number
+    if not T then return end
+    if on ~= b.NumOn then
+        b.NumOn, b.Said, b.NumTint = on, nil, nil
+        T:SetVisibility(on and HIT_TEST_INVISIBLE or COLLAPSED)
+        if b.Icon then
+            local k = on and ICON_SCALE or 1
+            b.Icon:SetRenderScale({ X = k, Y = k })
+            b.Icon:SetRenderTranslation({ X = 0, Y = on and -ICON_LIFT or 0 })
+        end
+    end
+    if not on then return end
+    if b.Digits ~= b.Said then
+        b.Said = b.Digits
+        T:SetText(FText(b.Digits or ""))
+    end
+    local c = (b.Low and b.Shown) and b.Shown.Ring or ICON_TINT
+    local key = string.format("%.2f %.2f %.2f", c.R, c.G, c.B)
+    if key ~= b.NumTint then
+        b.NumTint = key
+        ctx.SetColor(T, c)
+    end
 end
 
 -- Shows the share p (0..1) of the ring, clockwise from the top. b holds the two half pictures as Right and Left.
@@ -308,11 +366,15 @@ function M.Tick(ctx)
         Decorate(ctx, U)
         M.Tried = not Alive()
     end
+    local N = ctx.ById("survnumbers")
+    local numbers = N ~= nil and N.Visible == true
     for _, b in pairs(Built) do
         pcall(function()
-            local p = Share(b)
+            local p, digits = Share(b)
             if p and p ~= b.Value then b.Value = p Turn(b, p) end
+            if digits then b.Digits = digits end
             if b.GameIcon and b.GameRing then Warn(b) end
+            ShowNumber(ctx, b, numbers)
         end)
     end
 end

@@ -115,15 +115,15 @@ for _, r in ipairs(Skin.ROWS) do
     inSkin[r.Id] = true
     if not (r.E and Layout.IsSwitch(r.E)) then notSwitch[#notSwitch + 1] = r.Id end
 end
-check("the twelve rows, as decided", table.concat(skinNames, " | ") == "Wheels | Combat text | XP under the bars | Floating XP | Enemy health bars | Small level up notice | Gold crosshair and lock-on | Day and night icon | Game icons beside the bars | Bar numbers | Party numbers | Spell cooldowns in a row")
+check("the fourteen rows, as decided", table.concat(skinNames, " | ") == "Wheels | Combat text | Damage numbers | XP under the bars | Floating XP | Enemy health bars | Small level up notice | Gold crosshair and lock-on | Day and night icon | Game icons beside the bars | Bar numbers | Party numbers | Survival numbers | Spell cooldowns in a row")
 check("every row is a switch of the layout: " .. table.concat(notSwitch, " "), #notSwitch == 0)
 local others = {}
 for _, E in ipairs(Elements) do if Layout.IsSwitch(E) and not inSkin[E.Id] then others[#others + 1] = E.Id end end
 table.sort(others)
 check("the other two switches live in F8 (creatures) and F6 (immersive)", table.concat(others, " ") == "creatures immersive")
 local v = Skin.View(KEY, nil)
-check("the view: title, the name line, a value on every row, a hint", v.Mode == "skin" and v.Title == "RUNE SKIN" and v.Name == "Wheels:  On" and #v.Rows == 12
-    and v.Rows[1].Sel and v.Rows[1].Note == "On" and v.Rows[4].Note == "Off" and v.Rows[5].Note == "On" and v.Rows[8].Note == "On" and v.Rows[9].Note == "Off" and v.Rows[10].Note == "Off" and v.Rows[11].Note == "Off" and v.Rows[12].Note == "Off" and v.Hint == Skin.ROWS[1].On)
+check("the view: title, the name line, a value on every row, a hint", v.Mode == "skin" and v.Title == "RUNE SKIN" and v.Name == "Wheels:  On" and #v.Rows == 14
+    and v.Rows[1].Sel and v.Rows[1].Note == "On" and v.Rows[3].Note == "On" and v.Rows[5].Note == "Off" and v.Rows[6].Note == "On" and v.Rows[9].Note == "On" and v.Rows[10].Note == "Off" and v.Rows[11].Note == "Off" and v.Rows[12].Note == "Off" and v.Rows[13].Note == "Off" and v.Rows[14].Note == "Off" and v.Hint == Skin.ROWS[1].On)
 check("the view: its keys name F9 and F5 and fit the panel", v.Keys[4][1][1] == "F9" and v.Keys[5][1][1] == "F5" and #v.Keys <= 8)
 local before = Skin.State()
 Skin.Change(1)
@@ -132,13 +132,19 @@ check("the hint follows the value", Skin.View(KEY).Hint == Skin.ROWS[1].Off and 
 Skin.Change(-1)
 check("and on again", ById("wheels").Visible == true)
 Skin.Pick(-1)
-check("up from the first row goes to the last", Skin.Sel == 12)
+check("up from the first row goes to the last", Skin.Sel == 14)
 Skin.Change(1) Skin.Pick(1)
 check("down from the last goes to the first", Skin.Sel == 1 and ById("cdhoriz").Visible == true)
+check("the two number rows start as decided: Damage numbers On, Survival numbers Off", ById("dmgnumbers").Visible == true and ById("survnumbers").Visible == false
+    and Layout.IsSwitch(ById("dmgnumbers")) and Layout.IsSwitch(ById("survnumbers")) and Defaults.dmgnumbers == nil and Defaults.survnumbers.Visible == false)
 ById("combattext").Visible, ById("baricons").Visible, Skin.LayoutDirty = false, true, false
+ById("dmgnumbers").Visible, ById("survnumbers").Visible = false, true
 Skin.Reset()
 check("Backspace: every row back to its starting value", ById("combattext").Visible == true and ById("baricons").Visible == false and ById("cdhoriz").Visible == false
-    and ById("wheels").Visible == true and Skin.LayoutDirty == true)
+    and ById("wheels").Visible == true and ById("dmgnumbers").Visible == true and ById("survnumbers").Visible == false and Skin.LayoutDirty == true)
+Skin.Sel = 3
+check("Damage numbers: its hints say that the status words stay", Skin.View(KEY).Name == "Damage numbers:  On" and Skin.ROWS[3].Off:find("poison and burn words stay", 1, true) ~= nil)
+Skin.Sel = 1
 check("a row touches nothing but the switch: the saved keys stay", ById("runexp").Id == "runexp" and ById("slimlevel").Id == "slimlevel" and ById("aim").Id == "aim")
 
 ---------------------------------------------------------------- Rune Map (F8)

@@ -3,7 +3,8 @@
 // while it shows and given back when it does not; the ring is built once for the entry; its fill and colours follow the HUD
 // ring; no HUD ring, no survival.lua, a back that is not in an Overlay, pictures that do not load, and freed widgets are
 // safe. The last part runs survival.lua's real rings and the warning on top of them. It also checks the see-through back and
-// centre of every kind of ring.
+// centre of every kind of ring, and the numbers in the HUD rings (the switch "Survival numbers": the text, the smaller and higher
+// icon, the low colour, no text when off or before the first reading, and no text in the warning ring).
 // Needs npm install once. Run: node tools/test-noticering.js
 const { lua, lauxlib, lualib, to_luastring } = require('fengari');
 const fs = require('fs');
@@ -261,6 +262,91 @@ clock = clock + 1
 ctx.Survival.Tick(sctx)
 check("the warning of food follows the HUD ring: 8, the dark red lifted to half brightness", Near(food.Value, 0.08) and Near(r.Right.angle, 0.08 * 360 - 180) and SameColour(r.Right.ColorAndOpacity, food.Right.ColorAndOpacity)
     and math.max(r.Right.ColorAndOpacity.R, r.Right.ColorAndOpacity.G, r.Right.ColorAndOpacity.B) >= 0.5 - 1e-6)
+
+-- the numbers in the rings (the switch "Survival numbers"): survival.lua's real rings, a fresh set of them
+local numbersOn = false
+local U2, ics, arcs2, S2, sctx2
+local function GameText(prop) return U2[prop].WidgetTree.RootWidget.kids[2].kids[1] end
+local function Numbered(first)
+    M, ctx = Fresh()
+    w = current
+    U2 = Nested("Survival", "WBP_Survival_C", Box("USurv2", "Overlay", {}))
+    ics, arcs2 = {}, {}
+    U2.WBP_SurvivalCore_Upkeep_Hydration, ics[1], arcs2[1] = Upkeep("Water", "Hydration", first[1])
+    U2.WBP_SurvivalCore_Upkeep_Sustenance, ics[2], arcs2[2] = Upkeep("Food", "Sustenance", first[2])
+    U2.WBP_SurvivalCore_Upkeep_Endurance, ics[3], arcs2[3] = Upkeep("Rest", "Endurance", first[3])
+    S2 = load(SURVTEXT)()
+    ctx.Survival, ctx.Hud = S2, S2.Rings
+    sctx2 = { Log = function(m) logs[#logs + 1] = m end, ClearOurs = function() end,
+        ById = function(id) if id == "survnumbers" then return { Visible = numbersOn } end return { Instances = { U2 }, Keys = { "Transient.Survival2" } } end,
+        Text = function(tree, name, size, color, s)
+            local T = StaticConstructObject(StaticFindObject("/Script/UMG.TextBlock"), tree, name)
+            T.Font = { Size = size, OutlineSettings = { OutlineSize = 0 } }
+            T:SetText(FText(s or ""))
+            T:SetColorAndOpacity({ SpecifiedColor = color, ColorUseRule = 0 })
+            return T
+        end,
+        SetColor = function(T, c) T:SetColorAndOpacity({ SpecifiedColor = c, ColorUseRule = 0 }) end }
+end
+local function Hud() clock = clock + 1 S2.Tick(sctx2) return S2.Rings() end
+local function Tint(T) return T.ColorAndOpacity.SpecifiedColor end
+numbersOn = false
+Numbered({ "75/100", "50/100", "40/100" })
+local rings = Hud()
+local W3, F3, R3 = rings[1], rings[2], rings[3]
+check("numbers off: each ring has its text, unseen and empty, and the icon is as it was", W3.Number and F3.Number and R3.Number and W3.Number.vis == COLLAPSED and W3.Number.text == ""
+    and W3.Icon.RenderTransform.Scale == nil and W3.Icon.RenderTransform.Translation.Y == 0)
+check("the text is inside the ring's box, so the immersive mode fades it with the ring", W3.Number.parent.parent == W3.Box and W3.Number.name:find("^RU_Up%d+_%d+_1Num$") ~= nil)
+check("the text sits under the icon, 2 units right of the centre, at 47 percent of the ring's height, in size 12, with a dark edge", W3.Number.slot.h == 2 and W3.Number.slot.v == 1 and Near(W3.Number.slot.pad.Top, 0.47 * 68) and W3.Number.slot.pad.Left == 4 and W3.Number.slot.pad.Right == 0
+    and W3.Number.Font.Size == 12 and W3.Number.Font.OutlineSettings.OutlineSize == 1 and SameColour(Tint(W3.Number), S2.ICON_TINT))
+numbersOn = true
+rings = Hud()
+check("numbers on: the game's value of each need, as written", W3.Number.text == "75" and F3.Number.text == "50" and R3.Number.text == "40" and W3.Number.vis == 3)
+check("numbers on: the icon is 0.62 of its size and 11.8 percent of the ring higher", Near(W3.Icon.RenderTransform.Scale.X, 0.62) and Near(W3.Icon.RenderTransform.Scale.Y, 0.62) and Near(W3.Icon.RenderTransform.Translation.Y, -0.118 * 68) and W3.Icon.RenderTransform.Translation.X == 0)
+check("numbers on: off-white while the need is not low", SameColour(Tint(W3.Number), S2.ICON_TINT) and SameColour(Tint(F3.Number), S2.ICON_TINT))
+GameText("WBP_SurvivalCore_Upkeep_Hydration").text = "62/100"
+rings = Hud()
+check("the number follows the game's value", W3.Number.text == "62" and Near(W3.Value, 0.62))
+GameText("WBP_SurvivalCore_Upkeep_Endurance").text = "0/100"
+arcs2[3].ColorAndOpacity = { R = 0.9, G = 0.35, B = 0.1, A = 1 }
+ics[3].ColorAndOpacity = { R = 0.9, G = 0.1, B = 0.05, A = 1 }
+rings = Hud()
+check("a need at 0 shows 0, in the ring's low colour", R3.Number.text == "0" and R3.Low == true and SameColour(Tint(R3.Number), R3.Right.ColorAndOpacity) and Tint(R3.Number).R > 0.5)
+GameText("WBP_SurvivalCore_Upkeep_Endurance").text = "90/100"
+arcs2[3].ColorAndOpacity = { R = 1, G = 1, B = 1, A = 1 }
+ics[3].ColorAndOpacity = { R = 1, G = 1, B = 1, A = 1 }
+rings = Hud()
+check("the need recovers: the number is off-white again", R3.Number.text == "90" and R3.Low == false and SameColour(Tint(R3.Number), S2.ICON_TINT))
+numbersOn = false
+rings = Hud()
+check("numbers off again: the text is unseen, the icon is back to its size and place", W3.Number.vis == COLLAPSED and Near(W3.Icon.RenderTransform.Scale.X, 1) and W3.Icon.RenderTransform.Translation.Y == 0)
+numbersOn = true
+rings = Hud()
+check("and on again: the number shows at once", W3.Number.vis == 3 and W3.Number.text == "62" and Near(W3.Icon.RenderTransform.Scale.X, 0.62))
+-- the warning is the ring of the HUD again: it has no number
+w = current
+w.glyph.Brush.ResourceObject = ics[3].Brush.ResourceObject
+Step(M, ctx, 1.1) Step(M, ctx, 1.1)
+local warnTexts, hudTexts = 0, 0
+for _, m in ipairs(ringMade) do
+    if m.cls == "TextBlock" and m.name:find("^RU_WarnRing") then warnTexts = warnTexts + 1 end
+    if m.cls == "TextBlock" and m.name:find("^RU_Up") then hudTexts = hudTexts + 1 end
+end
+check("the warning ring has no text, the three HUD rings have one each", Ring().Box ~= nil and Ring().Box.vis == SEEN and warnTexts == 0 and hudTexts == 3)
+-- nothing shows before the first reading: the game has written nothing yet
+numbersOn = true
+Numbered({ "", "", "" })
+rings = Hud()
+check("no reading yet: the text is there and empty, the icon already made room", rings[1].Number.text == "" and rings[1].Number.vis == 3 and rings[1].Value == nil)
+GameText("WBP_SurvivalCore_Upkeep_Hydration").text = "48/100"
+rings = Hud()
+check("the first reading shows", rings[1].Number.text == "48" and rings[2].Number.text == "")
+-- a mod build that gives no text maker: the rings are built with no number, and still fill
+numbersOn = true
+Numbered({ "75/100", "50/100", "40/100" })
+sctx2.Text, sctx2.SetColor = nil, nil
+rings = Hud()
+check("no text maker (ctx.Text): the rings are built with no number, and still fill", rings[1].Number == nil and rings[1].Right and Near(rings[1].Value, 0.75) and rings[1].Icon.RenderTransform.Scale == nil)
 
 -- the sources: the rings that do not go through survival.lua's Ring take the two values from it, and no file has its own copy
 local function Source(f) return SOURCES[f] end

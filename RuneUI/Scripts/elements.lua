@@ -96,6 +96,13 @@ local Elements = {
     -- hidden, the game's numbers are back. On at first.
     { Id="combattext", Name="Combat text",                  Custom="combattext",
       A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
+    -- no widget of its own: hidden, no damage number and no "Critical" word shows over an enemy; the status words stay
+    -- (damagenumbers.lua). "Combat text" can be on or off. On at first.
+    { Id="dmgnumbers", Name="Damage numbers",               Custom="dmgnumbers",
+      A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
+    -- no widget of its own: shown, each survival ring has the game's value as a number under its icon (survival.lua). Off at first.
+    { Id="survnumbers", Name="Survival numbers",            Custom="survnumbers",
+      A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
     -- no widget of its own: shown, the spell, quick access and emote wheels have the mod's look (wheels.lua);
     -- hidden, the game's wheels are back. On at first.
     { Id="wheels",   Name="Wheels",                         Custom="wheels",
@@ -214,7 +221,7 @@ local Defaults = {
     -- the same Y as "notify"
     banners={Y=-20}, upkeep={Y=-20}, tips={Y=-20},
     baricons={Visible=false}, barnumbers={Visible=false}, partynumbers={Visible=false}, immersive={Visible=false, Wait=8},
-    floatxp={Visible=false},
+    floatxp={Visible=false}, survnumbers={Visible=false},
     -- 140 under the middle, clear of the party panel; a saved layout keeps its own place
     cooldowns={Y=140},
     cdhoriz={Visible=false},

@@ -103,11 +103,11 @@ check("an arrow in F9 moves the part: its row gets the mark", Has("Food, water a
 
 Press(F5)
 check("F5 from F9: Rune Skin, and the layout is saved with the move", view.Mode == "skin" and view.Title == "RUNE SKIN" and Links() == "Layout F9, Rune Map F8, Immersive mode F6" and Row("drink"):find("x=10", 1, true) ~= nil)
-check("F5: the switches in the panel's ten lines, each with a value", #view.Rows == 10 and view.Rows[1].Text == "Wheels" and view.Rows[1].Note == "On" and view.Rows[4].Text == "Floating XP" and view.Rows[4].Note == "Off" and view.Rows[5].Text == "Enemy health bars" and view.Rows[5].Note == "On" and view.Rows[8].Text == "Day and night icon" and view.Rows[8].Note == "On" and view.Rows[9].Text == "Game icons beside the bars" and view.Rows[9].Note == "Off")
+check("F5: the switches in the panel's ten lines, each with a value", #view.Rows == 10 and view.Rows[1].Text == "Wheels" and view.Rows[1].Note == "On" and view.Rows[3].Text == "Damage numbers" and view.Rows[3].Note == "On" and view.Rows[5].Text == "Floating XP" and view.Rows[5].Note == "Off" and view.Rows[6].Text == "Enemy health bars" and view.Rows[6].Note == "On" and view.Rows[9].Text == "Day and night icon" and view.Rows[9].Note == "On" and view.Rows[10].Text == "Game icons beside the bars" and view.Rows[10].Note == "Off")
 Press(RIGHT)
 check("Right: the look goes off and is saved at once, under its old id", view.Rows[1].Note == "Off" and view.Name == "Wheels:  Off" and Row("wheels"):find("visible=0", 1, true) ~= nil)
 Press(DOWN) Press(DOWN)
-check("Down twice: the third row", view.Rows[3].Sel and view.Name == "XP under the bars:  On")
+check("Down twice: the third row", view.Rows[3].Sel and view.Name == "Damage numbers:  On")
 Press(BACK)
 check("Backspace: every switch back to its starting value, and saved", view.Rows[1].Note == "On" and Row("wheels"):find("visible=1", 1, true) ~= nil)
 
