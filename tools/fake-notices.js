@@ -42,8 +42,10 @@ method("AddChildToOverlay", function(self, c)
     c.slot = {}
     function c.slot:SetHorizontalAlignment(a) self.h = a end
     function c.slot:SetVerticalAlignment(a) self.v = a end
+    function c.slot:SetPadding(p) self.pad = p end
     return c.slot
 end)
+setter("SetText", function(self, t) self.text = t end)   -- FText below gives the text itself
 setter("SetColorAndOpacity", function(self, c) self.ColorAndOpacity = c end)
 setter("SetDefaultColorAndOpacity", function(self, c) self.DefaultColorAndOpacity = c end)
 setter("SetFillColorAndOpacity", function(self, c) self.FillColorAndOpacity = c end)
@@ -134,6 +136,7 @@ function StaticConstructObject(cls, outer, name)
     return i
 end
 function FName(s) return s end
+function FText(s) return s end
 RUNEUI_DIR = "RuneUI/"
 io.open = function(p)
     if p:find("upkeep_") and not (missingArt and p:find(missingArt, 1, true)) then return { close = function() end } end

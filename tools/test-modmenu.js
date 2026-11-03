@@ -27,8 +27,8 @@ for (const s of page.settings) {
 // every row of the page that is not a key or a map setting has a Row in menurows.lua, or the menu would show a switch that does nothing
 const rowsLua = fs.readFileSync(path.join(dir, 'Scripts', 'menurows.lua'), 'utf8');
 // the on/off rows of the layout are made by one loop over { row key, element id } pairs
-const switchRows = { immersive: 'immersive', rune_xp: 'runexp', floating_xp: 'floatxp', enemy_bars: 'enemybars', slim_level_up: 'slimlevel', combat_text: 'combattext', horizontal_cooldowns: 'cdhoriz', party_panel: 'party', wheels: 'wheels',
-  gold_crosshair: 'aim', day_night_icon: 'dialskin', bar_icons: 'baricons', health_numbers: 'barnumbers', party_numbers: 'partynumbers' };
+const switchRows = { immersive: 'immersive', rune_xp: 'runexp', floating_xp: 'floatxp', enemy_bars: 'enemybars', slim_level_up: 'slimlevel', combat_text: 'combattext', damage_numbers: 'dmgnumbers', horizontal_cooldowns: 'cdhoriz', party_panel: 'party', wheels: 'wheels',
+  gold_crosshair: 'aim', day_night_icon: 'dialskin', bar_icons: 'baricons', health_numbers: 'barnumbers', party_numbers: 'partynumbers', survival_numbers: 'survnumbers' };
 if (!rowsLua.includes('Row(r[1], function() return El.Visible end, function(v) El.Visible = v == true Ed.Save = true end)')) fail('menurows.lua: the loop of the switch rows must read and write the element Visible and ask for a save');
 for (const [key, id] of Object.entries(switchRows)) if (!rowsLua.includes('{ "' + key + '", "' + id + '" }')) fail('menurows.lua: the row ' + key + ' must read and write the switch ' + id);
 for (const s of page.settings) {
@@ -49,7 +49,7 @@ for (const [key, id, label] of [['wheels', 'wheels', 'Wheels']]) {
 const elementsLua = fs.readFileSync(path.join(dir, 'Scripts', 'elements.lua'), 'utf8');
 const skinIds = [...fs.readFileSync(path.join(dir, 'Scripts', 'skinpanel.lua'), 'utf8').matchAll(/\{ Id = "(\w+)"/g)].map(m => m[1]);
 const first = page.settings.findIndex(s => s.type === 'header' && s.label === 'Rune Skin');
-if (first < 0 || skinIds.length !== 12) fail('modmenu.txt needs the header Rune Skin, and skinpanel.lua twelve rows');
+if (first < 0 || skinIds.length !== 14) fail('modmenu.txt needs the header Rune Skin, and skinpanel.lua fourteen rows');
 skinIds.forEach((id, i) => {
   const s = page.settings[first + 1 + i];
   const name = (elementsLua.match(new RegExp('Id="' + id + '",\\s*Name="([^"]*)"')) || [])[1];

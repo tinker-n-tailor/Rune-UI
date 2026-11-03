@@ -98,7 +98,9 @@ function M.Build(H)
             return Immersive and Immersive.Factor(ById("runemap")) or 1
         end }
     AddPart("runemap", RuneMap, MapCtx)
-    AddPart("survival", Survival, { Log = Log, ById = ById, ClearOurs = ClearOurs })
+    -- Text and SetColor: the number under the icon of each ring (the switch "survnumbers"), in Poppins Medium
+    AddPart("survival", Survival, { Log = Log, ById = ById, ClearOurs = ClearOurs, SetColor = SetColor,
+        Text = function(tree, name, size, color, s) return MakeText(tree, name, size, color, s, FindPoppinsMedium()) end })
     if RuneMap then   -- the icon reads the time through the map's reader: one read serves both (maplook.lua ReadClock)
         AddPart("day and night icon", LoadPart("dial"), { Log = Log, ById = ById, Uniq = Uniq, ClearOurs = ClearOurs, CachedTex = CachedTex,
             MayTry = MayTry, Failed = Failed, ReadClock = RuneMap.ReadClock,
@@ -191,6 +193,9 @@ function M.Build(H)
         if P then AddPart("combat text", P, { Log = Log, Find = FindClass, MayTry = MayTry, Failed = Failed, Chain = Util.Chain,
             Soon = ExecuteInGameThreadWithDelay,
             On = function() return ById("combattext").Visible end }) end
+        -- hides the damage numbers (the switch "dmgnumbers"); it works with "Combat text" on and off, so it is not in combattext.lua
+        local DamageNumbers = LoadPart("damagenumbers")
+        if DamageNumbers then AddPart("damage numbers", DamageNumbers, { Log = Log, Find = FindClass, On = function() return ById("dmgnumbers").Visible end }) end
         local XpFloat = LoadPart("xpfloat")   -- the game's floating XP, shown or not (the switch "floatxp")
         if XpFloat then AddPart("floating xp", XpFloat, { Log = Log, Find = FindClass, On = function() return ById("floatxp").Visible end }) end
         AddPart("death look", LoadPart("deathlook"), { Log = Log, Find = FindClass, Asset = Asset, MayTry = MayTry, Failed = Failed, Combat = P })   -- "You Died": red, bigger, above the band

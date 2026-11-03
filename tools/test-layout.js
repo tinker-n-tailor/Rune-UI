@@ -26,6 +26,8 @@ local function Fresh()
         { Id="slimlevel", Custom="slimlevel", A={0,0}, Center={X=265, Y=125}, Size={X=330, Y=18} },
         { Id="combattext", Custom="combattext", A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
         { Id="wheels", Custom="wheels", A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
+        { Id="dmgnumbers", Custom="dmgnumbers", A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
+        { Id="survnumbers", Custom="survnumbers", A={0,0}, Center={X=960, Y=540}, Size={X=40, Y=40} },
         { Id="party", Custom="party", A={0,0}, Center={X=154.5, Y=301}, Size={X=225, Y=310} },
     }
     for _, e in ipairs(E) do e.X, e.Y, e.Scale = 0, 0, 1 e.A = e.A or {0, 0} M.TargetFromSpot(e) end
@@ -48,6 +50,8 @@ local QT = M.ById("questlist")
 check("kinds: the quest tracker is the game's widget in the HUD, not a switch and not on the viewport", not M.OnViewport(QT) and not M.IsSwitch(QT))
 check("kinds: the slim level up is a switch with no widget", M.IsSwitch(M.ById("slimlevel")) and not M.OnViewport(M.ById("slimlevel")))
 check("kinds: the combat text is a switch with no widget", M.IsSwitch(M.ById("combattext")) and not M.OnViewport(M.ById("combattext")))
+check("kinds: the damage numbers and the survival numbers are switches with no widget", M.IsSwitch(M.ById("dmgnumbers")) and not M.OnViewport(M.ById("dmgnumbers"))
+    and M.IsSwitch(M.ById("survnumbers")) and not M.OnViewport(M.ById("survnumbers")))
 check("kinds: the wheels are a switch with no widget", M.IsSwitch(M.ById("wheels")) and not M.OnViewport(M.ById("wheels")))
 local CD, CH = M.ById("cooldowns"), M.ById("cdhoriz")
 check("kinds: the cooldown tiles are on the viewport, their horizontal setting is a switch", M.OnViewport(CD) and not M.IsSwitch(CD) and M.IsSwitch(CH) and not M.OnViewport(CH))
