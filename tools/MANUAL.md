@@ -129,7 +129,7 @@ Other parts:
 | Level badge and avatar.png | Put `avatar.png` in the `RuneUI` folder for your picture. |
 | Gamepad | Buttons in menus. |
 | Mouse pointer | A gold arrow in the menus and on the big map. |
-| Big map | A quest area is a faint circle with a shield. The mouse goes through the circle. The wheel zooms in three steps. |
+| Big map | A quest area is a faint circle with a shield. The mouse goes through the circle. The wheel zooms in three steps; a controller keeps the game's smooth zoom. |
 
 Mod Menu page: press Esc, MODS, Rune UI. It holds the keys and the settings of the four panels.
 

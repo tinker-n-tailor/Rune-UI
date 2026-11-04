@@ -1,8 +1,8 @@
 // Tests the big map (bigmap.lua) against fake markers shaped like the game's (WBP_Dominion_MinimapInternal_Icon_C:
 // MapIconComp, Image_Icon, WidgetTree.RootWidget). Every marker loses the cross pointer. A quest area goes faint, lets the
 // mouse through and gets one shield at its own place, however many maps draw it; the shield comes off when the game hides
-// the circle. A marker that cannot be read is left alone and looked at again. The wheel moves the zoom one level a notch,
-// the gamepad's stick one level a push.
+// the circle. A marker that cannot be read is left alone and looked at again. The wheel moves the zoom one level a notch;
+// with a gamepad the mod leaves the zoom to the game.
 // Also covers a new world and a restart.
 // Needs npm install once. Run: node tools/test-bigmap.js
 const { lua, lauxlib, lualib, to_luastring } = require('fengari');
@@ -199,11 +199,17 @@ Step()
 check("two areas on one owner: two shields, each at its circle", #shared.Icons == 2 and shared.Icons[1].At.X + shared.Icons[2].At.X == 30)
 
 -- the zoom: one level a notch
-check("levels: a notch out from close is the zone", M.NextLevel(1, 3, 3.14) == 2)
-check("levels: a notch out from the zone is the whole map", M.NextLevel(2, 6.3, 6.43) == 3)
-check("levels: a notch out at the whole map stays", M.NextLevel(3, 20, 20.2) == 3)
-check("levels: a notch in from the whole map is the zone", M.NextLevel(3, 20, 19.87) == 2)
-check("levels: the game's own start is close, from any level", M.NextLevel(3, 20, 3) == 1)
+check("levels: a notch out from close is the zone", M.NextLevel(3, 3.14) == 2)
+check("levels: a notch out from the zone is the whole map", M.NextLevel(6.3, 6.43) == 3)
+check("levels: a notch out at the whole map stays", M.NextLevel(20, 20.2) == 3)
+check("levels: a notch in from the whole map is the zone", M.NextLevel(20, 19.87) == 2)
+check("levels: a notch in from the zone is close", M.NextLevel(6.3, 6.16) == 1)
+check("levels: the game's own start is close, from any level", M.NextLevel(20, 3) == 1)
+-- from a zoom the stick left between two levels: the level ahead, none skipped
+check("levels: from 5, a notch out is the zone", M.NextLevel(5, 5.14) == 2)
+check("levels: from 5, a notch in is close", M.NextLevel(5, 4.86) == 1)
+check("levels: from 12, a notch out is the whole map", M.NextLevel(12, 12.14) == 3)
+check("levels: from 12, a notch in is the zone", M.NextLevel(12, 11.86) == 2)
 Step()
 check("a zoom that stands is not written", view.Sets == 0)
 view.Zoom = 3.14 Step(0.05)
@@ -219,24 +225,45 @@ view.Zoom = 3.14 Step(0.05)
 check("after that the wheel out is the zone again", view.Zoom == 6.3)
 
 -- a gamepad: the right stick moves the zoom a little at every frame while it is held (IMC_Map: Gamepad_RightY, an
--- axis), so one push is one level
+-- axis). The game's own zoom is smooth, so the mod writes nothing
 local pad = true
 ctx.Pad = function() return pad end
+local before, said = view.Sets, #logs
 view.Zoom = 3 Step(0.05)   -- the map opens again
-for i = 1, 10 do view.Zoom = view.Zoom + 0.02 Step(0.016) end
-check("the stick held out: one level, the zone", view.Zoom == 6.3)
-Step(0.5)   -- the stick let go
-view.Zoom = 6.32 Step(0.016)
-check("the stick pushed out again: the whole map", view.Zoom == 20)
-for i = 1, 10 do view.Zoom = view.Zoom + 0.02 Step(0.016) end
-check("held at the whole map: it stays", view.Zoom == 20)
-Step(0.5)
-for i = 1, 10 do view.Zoom = view.Zoom - 0.02 Step(0.016) end
-check("the stick held in: one level, the zone", view.Zoom == 6.3)
+view.Zoom = 3.01 Step(0.016) Step(0.016) Step(0.3)   -- a light tap, then the stick let go
+check("a light tap of the stick: the zoom stays where the game put it", view.Zoom == 3.01)
+for i = 1, 30 do view.Zoom = view.Zoom + 0.5 Step(0.016) end
+check("the stick held out: the game's zoom, not a level", math.abs(view.Zoom - 18.01) < 0.001)
+for i = 1, 20 do view.Zoom = view.Zoom - 0.5 Step(0.016) end
+check("the stick held in: the game's zoom, not a level", math.abs(view.Zoom - 8.01) < 0.001)
+check("with a gamepad the mod writes no zoom", view.Sets == before)
+local gamepadLines = 0
+for i = said + 1, #logs do if logs[i]:find("gamepad", 1, true) then gamepadLines = gamepadLines + 1 end end
+check("the log names the gamepad once", gamepadLines == 1)
+-- the mouse after the stick: the level ahead of the zoom the stick left, which is past the zone
 pad = false
 Step(0.5)
+view.Zoom = 8.15 Step(0.016)
+check("the mouse after the stick: a notch out from past the zone is the whole map", view.Zoom == 20)
+check("the log names the mouse", logs[#logs]:find("mouse", 1, true))
+view.Zoom = 19.87 Step(0.016)
+check("the mouse: a notch in from the whole map is the zone", view.Zoom == 6.3)
 view.Zoom = 6.43 Step(0.016) view.Zoom = 20.2 Step(0.016)
-check("the mouse: two quick notches are two levels, as before", view.Zoom == 20)
+check("the mouse: two quick notches are two levels", view.Zoom == 20)
+
+-- the stick right after a notch: the fast reads of the wheel run every 16 ms between the steps and read the input
+-- of that moment, so the stick is not snapped
+local fast
+ctx.Chain = { Run = function(chain, c, ms, step, more) fast = { step = step, more = more } end }
+view.Zoom = 19.87 Step(0.016)
+check("a notch starts the fast reads", fast ~= nil and view.Zoom == 6.3)
+local sets2 = view.Sets
+pad = true
+view.Zoom = 6.35 clock = clock + 0.016 fast.step(ctx, clock)
+check("a stick move in the fast reads is not snapped", view.Zoom == 6.35 and view.Sets == sets2)
+check("the fast reads end with the stick", not fast.more(ctx, clock))
+ctx.Chain = nil
+pad = false
 view.Zoom = 3 Step(0.05)
 
 -- a restart of the player: the shields come off and come back once; a new world: nothing of the old one is called

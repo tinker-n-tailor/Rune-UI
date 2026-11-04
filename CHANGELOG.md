@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- A light tap of the controller stick no longer makes the big map zoom jump.
+
 ## [1.17] - 2026-11-03
 
 ### Added
