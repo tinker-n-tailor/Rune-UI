@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.17.1] - 2026-11-04
+
+### Changed
+
+- The big map zoom for controller users is now the game's own smooth zoom.
+
 ## [1.17] - 2026-11-03
 
 ### Added

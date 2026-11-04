@@ -10,8 +10,8 @@
 --     the game's own pointer shows, as on the rest of the map. SetCursor with the default gave the Windows arrow.
 --   - The big map's zoom is the zoom of the player's own map view (the component MapView of the pawn; RuneMap has a
 --     view of its own). The game sets it to 3 when the map opens, the wheel moves it a little at a notch, and 20
---     shows the whole map. The mod snaps it to three levels, one level a notch or a push of the gamepad's stick:
---     close, the zone, the whole map.
+--     shows the whole map. With the mouse, the mod snaps it to three levels, one level a notch: close, the zone,
+--     the whole map. A gamepad keeps the game's own zoom (see the zoom below).
 -- What the mod does to a quest area: the circle goes faint, the mouse goes through it, and its middle gets a shield,
 -- gold for the main quest, blue for a side quest and green for a task of the main quest. The shield is the map plugin's own icon, as RuneMap's creature
 -- icons are, so every map draws it at the right place. One actor can own the circles of many areas (the game's
@@ -52,11 +52,17 @@ local function Alive(o) return o and o:IsValid() end   -- a property or a call c
 
 ---------------------------------------------------------------- the zoom, without the game (tools/test-bigmap.js)
 
--- The level after the game moved the zoom from last to z, standing at level idx. A zoom at the first level or under
--- it is the game's own start (the map opened), whatever the level was. Else one level in the direction of the move.
-function M.NextLevel(idx, last, z)
+-- The level after the game moved the zoom from last to z. A zoom at the first level or under it is the game's own
+-- start (the map opened). Else the first level past last in the direction of the move: from a level, the next one;
+-- from a zoom that the stick left between two levels, the one ahead, so no level is skipped.
+function M.NextLevel(last, z)
     if z <= M.LEVELS[1] + 0.001 then return 1 end
-    return math.max(1, math.min(#M.LEVELS, idx + (z > last and 1 or -1)))
+    if z > last then
+        for i, l in ipairs(M.LEVELS) do if l > last + 0.001 then return i end end
+        return #M.LEVELS
+    end
+    for i = #M.LEVELS, 1, -1 do if M.LEVELS[i] < last - 0.001 then return i end end
+    return 1
 end
 
 ---------------------------------------------------------------- the markers
@@ -284,15 +290,15 @@ end
 
 local View               -- the player's own map view
 local NextView = 0
-local Level, Last = 1, nil
+local Last
 local Chain = { Name = "big map zoom" }
 local FAST_FOR = 5       -- seconds after a move of the zoom in which it is read about every frame
 local FastUntil = 0
--- A gamepad zooms with the right stick, an axis (IMC_Map): held, it moves the zoom a little at every frame, and each
--- move was a level, so one push went from close to the whole map. With a gamepad, a move this soon after the last
--- one is the same push and keeps the level.
-local PUSH_GAP = 0.25
-local Pad, PushAt = false, nil
+-- A gamepad zooms with the right stick, an axis (IMC_Map): held, it moves the zoom a little at every frame, smooth on
+-- its own. Levels fought it: the game moved the zoom, the mod wrote it back, and a light tap made the map jump and
+-- flicker (Nexus, 1.16). With a gamepad the mod only follows the zoom and writes nothing.
+local Pad = false
+local Said           -- the input last named in the log at a move of the zoom: a player's log tells which path ran
 
 local function FindView(ctx, now)
     if Alive(View) or now < NextView then return end
@@ -306,28 +312,29 @@ local function FindView(ctx, now)
     end)
 end
 
--- Reads the zoom; a move of it snaps to the next level. True when it moved.
+-- The input of this moment: read at every step, the fast ones too, so a stick move right after a notch is not snapped.
+local function ReadPad(ctx)
+    local ok, pad = pcall(ctx.Pad or function() return false end)
+    Pad = ok and pad == true
+end
+
+-- Reads the zoom; with the mouse, a move of it snaps to the next level. True when it moved.
 local function Snap()
     if not Alive(View) then Last = nil return false end
     local z = View:GetZoomScale()
     if Last == nil then Last = z return false end
     if math.abs(z - Last) < 0.001 then return false end
-    local now = os.clock()
-    FastUntil = now + FAST_FOR
-    local start = z <= M.LEVELS[1] + 0.001   -- the map opened, or the zoom went under close: no push of the stick
-    if Pad and PushAt and now - PushAt < PUSH_GAP and not start then
-        PushAt = now
-        View:SetZoomScale(Last)
+    if Pad then
+        Last, FastUntil = z, 0   -- the fast reads of the wheel end
         return true
     end
-    Level = M.NextLevel(Level, Last, z)
-    Last = M.LEVELS[Level]
+    FastUntil = os.clock() + FAST_FOR
+    Last = M.LEVELS[M.NextLevel(Last, z)]
     if math.abs(z - Last) >= 0.001 then View:SetZoomScale(Last) end
-    PushAt = (Pad and not start) and now or nil
     return true
 end
 
-local function FastStep() pcall(Snap) end
+local function FastStep(ctx) ReadPad(ctx) pcall(Snap) end
 local function FastMore(_, t) return t < FastUntil end
 
 function M.Tick(ctx)
@@ -338,11 +345,14 @@ function M.Tick(ctx)
         SyncShields(ctx)
     end
     FindView(ctx, now)
-    local okPad, pad = pcall(ctx.Pad or function() return false end)
-    Pad = okPad and pad == true
+    ReadPad(ctx)
     local ok, moved = pcall(Snap)
+    if ok and moved and Said ~= Pad then
+        Said = Pad
+        ctx.Log(Pad and "big map zoom: gamepad, the game's own zoom" or "big map zoom: mouse, three levels")
+    end
     -- the wheel turns on: the next notches are read about every frame, so no half step shows
-    if ok and moved and ctx.Chain then ctx.Chain.Run(Chain, ctx, 16, FastStep, FastMore) end
+    if ok and moved and not Pad and ctx.Chain then ctx.Chain.Run(Chain, ctx, 16, FastStep, FastMore) end
 end
 
 -- A new world: the old markers, owners and icons are gone, so nothing is called on them. A player restart: the things
@@ -353,7 +363,7 @@ function M.Forget(sameWorld)
     end
     Areas, Shields, Ours, Waiting = {}, {}, {}, {}
     Kinds, KindsFound = {}, 0
-    View, Last, Level, FastUntil, PushAt = nil, nil, 1, 0, nil
+    View, Last, FastUntil, Said = nil, nil, 0, nil
     NextLook, NextShields, NextScan, NextView, Logged, Scans = 0, 0, 0, 0, 0, 0
     Chain.Token, Chain.Time = (Chain.Token or 0) + 1, nil   -- a call still queued does nothing (chain.lua's Stop)
 end
